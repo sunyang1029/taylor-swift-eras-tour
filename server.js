@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { readFileSync } from 'fs';
-import ticketApiRoutes from './交客松/data/api-routes.js';
+import ticketApiRoutes from './hackathon/data/api-routes.js';
 
 dotenv.config();
 
