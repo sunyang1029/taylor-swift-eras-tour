@@ -20,6 +20,11 @@ const DATA_PATH = join(__dirname, "tour-data.json");
 
 const router = Router();
 
+// ── GET /api/ping — 诊断端点 ──────────────────────────────
+router.get("/api/ping", (_req, res) => {
+  res.json({ ok: true, time: new Date().toISOString(), uptime: process.uptime() });
+});
+
 // ── GET /api/ticket/dashboard — 首页仪表盘 ───────────────
 router.get("/api/ticket/dashboard", (_req, res) => {
   res.json(getDashboardSummary());

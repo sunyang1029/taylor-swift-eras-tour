@@ -10,8 +10,8 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
 app.use(ticketApiRoutes);
+app.use(express.static('.'));
 
 // ---------- Anthropic Client ----------
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });

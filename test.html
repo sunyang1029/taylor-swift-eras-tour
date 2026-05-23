@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/><title>API Test</title>
+<style>body{font-family:monospace;background:#111;color:#0f0;padding:40px;font-size:14px;line-height:1.8}</style>
+</head><body>
+<h2>API Connectivity Test</h2>
+<div id="log"></div>
+<script>
+var log = document.getElementById('log');
+function say(s, color){
+  var d = document.createElement('div');
+  d.style.color = color || '#0f0';
+  d.textContent = (color==='red'?'[FAIL] ':'[OK] ') + s;
+  log.appendChild(d);
+}
+function test(name, url){
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(d){
+    say(name + ' — ' + JSON.stringify(d).substring(0,120), '#0f0');
+  }).catch(function(e){
+    say(name + ' — ' + e.message, 'red');
+  });
+}
+test('ping', '/api/ping')
+.then(function(){ return test('dashboard', '/api/ticket/dashboard'); })
+.then(function(){ return test('countdown', '/api/ticket/countdown'); })
+.then(function(){ return test('prices', '/api/ticket/price/all'); })
+.then(function(){ say('ALL TESTS COMPLETE', '#ff0'); });
+</script>
+</body></html>
