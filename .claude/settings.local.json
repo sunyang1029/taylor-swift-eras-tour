@@ -3,7 +3,35 @@
     "allow": [
       "Bash(export PATH=\"/e/qtcreator bit/Qt/5.15.2/mingw81_64/bin:/d/vscode/mingw64/mingw64/bin:$PATH\")",
       "Bash(mingw32-make)",
-      "Bash(./PetGame.exe)"
+      "Bash(./PetGame.exe)",
+      "Bash(curl -s -o /dev/null -w \"Chinese path: HTTP %{http_code}\\\\n\" \"http://localhost:3456/交客松/lib/three.min.js\")",
+      "Bash(curl -s -o /dev/null -w \"URL-encoded: HTTP %{http_code}\\\\n\" \"http://localhost:3456/%E4%BA%A4%E5%AE%A2%E6%9D%BE/lib/three.min.js\")",
+      "Bash(curl -s -o /dev/null -w \"three.js: HTTP %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://localhost:3456/lib/three.min.js)",
+      "Bash(curl -s -o /dev/null -w \"gsap.js: HTTP %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://localhost:3456/lib/gsap.min.js)",
+      "Bash(curl -s -o /dev/null -w \"index.html: HTTP %{http_code}\\\\n\" http://localhost:3456/index.html)",
+      "Bash(curl -s -o /dev/null -w \"dashboard: HTTP %{http_code}\\\\n\" http://localhost:3456/api/ticket/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"countdown: HTTP %{http_code}\\\\n\" http://localhost:3456/api/ticket/countdown)",
+      "Bash(taskkill //PID 43976 //F)",
+      "Bash(git mv *)",
+      "Bash(mkdir -p hackathon/data)",
+      "Bash(cp \"交客松/data/tour-data.json\" hackathon/data/)",
+      "Bash(cp \"交客松/data/ticket-engine.js\" hackathon/data/)",
+      "Bash(cp \"交客松/data/api-routes.js\" hackathon/data/)",
+      "Bash(cp \"交客松/提示词.md\" hackathon/)",
+      "Bash(curl -s -o /dev/null -w \"dashboard: %{http_code}\\\\n\" http://localhost:3456/api/ticket/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"countdown: %{http_code}\\\\n\" http://localhost:3456/api/ticket/countdown)",
+      "Bash(curl -s -o /dev/null -w \"prices: %{http_code}\\\\n\" http://localhost:3456/api/ticket/price/all)",
+      "Bash(curl -s -o /dev/null -w \"index: %{http_code}\\\\n\" http://localhost:3456/index.html)",
+      "Bash(curl -s -o /dev/null -w \"three.js: %{http_code}\\\\n\" http://localhost:3456/lib/three.min.js)",
+      "Bash(rm -rf \"交客松\")",
+      "Bash(git rm *)",
+      "Bash(curl -s http://localhost:3456/api/ping)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3456/test.html)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3456/api/ticket/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3456/lib/three.min.js)",
+      "Bash(curl -s -o /dev/null -w \"test.html: %{http_code}\\\\n\" http://localhost:3456/test.html)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{let j=JSON.parse\\(d\\);console.log\\('type:', j.type\\);console.log\\('deps:', JSON.stringify\\(j.dependencies\\)\\)}\\)\")",
+      "Bash(curl -s -o /dev/null -w \"index.html: %{http_code}\\\\n\" http://localhost:3456/index.html)"
     ]
   }
 }

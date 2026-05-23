@@ -8,10 +8,30 @@ import ticketApiRoutes from './hackathon/data/api-routes.js';
 dotenv.config();
 
 const app = express();
+
+// ── Request logger (调试用) ──────────────────────────────
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${new Date().toISOString().slice(11,19)} ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
+
+// Direct ping (bypasses router, for debugging)
+app.get('/api/ping', (_req, res) => {
+  res.set('Connection', 'close');
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
 app.use(ticketApiRoutes);
 app.use(express.static('.'));
+
+// ── Global error handler ──────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error('[ERR]', err.stack || err.message || err);
+  res.status(500).json({ error: 'Internal server error', message: err.message });
+});
 
 // ---------- Anthropic Client ----------
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });

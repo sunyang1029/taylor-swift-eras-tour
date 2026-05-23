@@ -1,31 +1,42 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><title>API Test</title>
-<style>body{font-family:monospace;background:#111;color:#0f0;padding:40px;font-size:14px;line-height:1.8}</style>
+<style>body{font-family:monospace;background:#111;color:#0f0;padding:30px;font-size:14px;line-height:2}</style>
 </head><body>
-<h2>API Connectivity Test</h2>
+<h2>API Connectivity Diagnostics</h2>
 <div id="log"></div>
 <script>
 var log = document.getElementById('log');
-function say(s, color){
-  var d = document.createElement('div');
-  d.style.color = color || '#0f0';
-  d.textContent = (color==='red'?'[FAIL] ':'[OK] ') + s;
-  log.appendChild(d);
-}
-function test(name, url){
-  return fetch(url).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }).then(function(d){
-    say(name + ' — ' + JSON.stringify(d).substring(0,120), '#0f0');
-  }).catch(function(e){
-    say(name + ' — ' + e.message, 'red');
-  });
-}
-test('ping', '/api/ping')
-.then(function(){ return test('dashboard', '/api/ticket/dashboard'); })
-.then(function(){ return test('countdown', '/api/ticket/countdown'); })
-.then(function(){ return test('prices', '/api/ticket/price/all'); })
-.then(function(){ say('ALL TESTS COMPLETE', '#ff0'); });
+function say(s, c){ var d=document.createElement('div');d.style.color=c||'#0f0';d.textContent=s;log.appendChild(d); }
+
+var BASE = location.protocol + '//' + location.host;
+say('Page URL: '+location.href, '#fff');
+say('API base: '+BASE, '#888');
+
+// Test 1: IMG (oldest, most reliable browser mechanism)
+say('--- IMG Ping ---', '#ff0');
+var ts = Date.now();
+var img = document.createElement('img');
+img.src = BASE + '/api/ping?t=' + ts;
+img.onload = function(){ say('IMG OK (server reachable)', '#0f0'); };
+img.onerror = function(){ say('IMG FAILED at: '+img.src, 'red'); };
+img.style.display = 'none';
+document.body.appendChild(img);
+
+// Test 2: XHR
+say('--- XHR Ping ---', '#ff0');
+var xhr = new XMLHttpRequest();
+xhr.open('GET', BASE + '/api/ping?t='+Date.now());
+xhr.timeout = 5000;
+xhr.onload = function(){ say('XHR HTTP '+xhr.status+': '+xhr.responseText.substring(0,120), '#0f0'); };
+xhr.onerror = function(){ say('XHR ERROR — network level failure', 'red'); };
+xhr.ontimeout = function(){ say('XHR TIMEOUT after 5s', 'red'); };
+xhr.send();
+
+// Test 3: fetch
+say('--- Fetch Ping ---', '#ff0');
+fetch(BASE + '/api/ping?t='+Date.now(), {method:'GET', cache:'no-store', redirect:'error'})
+  .then(function(r){ say('Fetch HTTP '+r.status, '#0f0'); return r.text(); })
+  .then(function(t){ say('Fetch body: '+t, '#0f0'); })
+  .catch(function(e){ say('Fetch FAIL: '+e.name+' — '+e.message, 'red'); });
 </script>
 </body></html>

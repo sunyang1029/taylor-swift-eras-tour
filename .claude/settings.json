@@ -48,7 +48,13 @@
       "Bash(\"C:/Program Files/GitHub CLI/gh.exe\" --version)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
       "Read(//c/Program Files/GitHub CLI//**)",
-      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)"
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --hostname github.com --web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create \"taylor-swift-eras-tour\" --public --source=. --remote=origin --push)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git config *)",
+      "Bash(curl -s http://localhost:3456/api/ticket/dashboard)"
     ],
     "additionalDirectories": [
       "\\tmp"
