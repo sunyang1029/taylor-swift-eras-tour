@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"/e/qtcreator bit/Qt/5.15.2/mingw81_64/bin:/d/vscode/mingw64/mingw64/bin:$PATH\")",
+      "Bash(mingw32-make)",
+      "Bash(./PetGame.exe)"
+    ]
+  }
+}

@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长征·丰碑 — 纪念长征胜利九十周年</title>
+<style>
+  /* 使用系统自带中文字体，避免Google Fonts被墙 */
+  @font-face {
+    font-family: 'Cinematic';
+    src: local('Noto Serif SC'), local('SimSun'), local('STSong'), local('SimHei'), local('Microsoft YaHei');
+  }
+
+  :root {
+    --bg: #0a0a0a;
+    --gold: #c9a96e;
+    --red: #c41e3a;
+    --text: #e8e0d5;
+    --scene-1-bg: #1a1a2e;
+    --scene-2-bg: #2e0a0a;
+    --scene-3-bg: #1a1a0a;
+    --scene-4-bg: #0a0a1a;
+    --scene-5-bg: #e8eef5;
+    --scene-6-bg: #1a0a0a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar { display: none; }
+
+  body {
+    font-family: 'Cinematic', 'Noto Serif SC', 'SimSun', 'STSong', 'PingFang SC', 'Microsoft YaHei', serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Canvas Overlay */
+  #particle-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+
+  /* Progress Bar */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--gold));
+    z-index: 100; transition: width 0.3s ease;
+  }
+
+  /* Navigation Dots */
+  #nav-dots {
+    position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+    z-index: 90; display: flex; flex-direction: column; gap: 14px;
+  }
+  #nav-dots a {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid rgba(200,180,150,0.5);
+    background: transparent;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+  }
+  #nav-dots a.active { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 12px var(--gold); transform: scale(1.4); }
+  #nav-dots a:hover { border-color: var(--gold); }
+
+  /* Audio Toggle */
+  #audio-toggle {
+    position: fixed; top: 24px; right: 24px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--gold); font-size: 20px;
+    cursor: pointer; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+  }
+  #audio-toggle:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(201,169,110,0.3); }
+
+  #autoplay-toggle {
+    position: fixed; top: 24px; right: 78px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--gold); font-size: 16px;
+    cursor: pointer; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+  }
+  #autoplay-toggle:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(201,169,110,0.3); }
+  #autoplay-toggle.playing { background: rgba(196,30,58,0.5); border-color: var(--red); }
+
+  /* Scene Container */
+  .scene {
+    width: 100%; height: 100vh;
+    scroll-snap-align: start;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Video Background */
+  .scene-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .scene-video.playing { opacity: 1; }
+  .scene-video-overlay {
+    position: absolute; inset: 0;
+    z-index: 3;
+    background: rgba(0,0,0,0.55);
+    pointer-events: none;
+  }
+  /* Lighter overlay for snow scene */
+  #scene5 .scene-video-overlay { background: rgba(0,0,0,0.25); }
+
+  /* Scene Background Layers (fallback CSS) */
+  .scene-bg {
+    position: absolute; inset: 0; z-index: 1;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  /* Hide fallback when video is playing */
+  .scene-video.playing ~ .scene-bg { opacity: 0; transition: opacity 0.8s ease; }
+
+  /* Scene Content */
+  .scene-content {
+    position: relative; z-index: 5;
+    text-align: center; max-width: 800px;
+    padding: 40px;
+    opacity: 0; transform: translateY(40px);
+    transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .scene.visible .scene-content { opacity: 1; transform: translateY(0); }
+  .scene.visible .scene-content.delay { transition-delay: 0.3s; }
+
+  .scene-number {
+    font-size: 14px; letter-spacing: 8px;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 16px; opacity: 0.8;
+  }
+  .scene-title {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900; letter-spacing: 6px;
+    line-height: 1.2; margin-bottom: 20px;
+    background: linear-gradient(180deg, #f0e0c0 0%, #c9a96e 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .scene-subtitle {
+    font-size: clamp(16px, 2vw, 20px);
+    color: rgba(232,224,213,0.7);
+    line-height: 1.8; letter-spacing: 2px;
+  }
+  .scene-quote {
+    margin-top: 30px; padding: 20px 30px;
+    border-left: 2px solid var(--gold);
+    font-style: italic; color: var(--gold);
+    font-size: 15px; letter-spacing: 2px;
+    text-align: left; opacity: 0.9;
+  }
+
+  /* Scene-specific backgrounds */
+  #scene1 { background: radial-gradient(ellipse at 50% 80%, #1a1a2e 0%, #0a0a15 60%); }
+  #scene1 .scene-bg {
+    background:
+      radial-gradient(circle at 20% 70%, rgba(180,150,100,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 60%, rgba(180,150,100,0.04) 0%, transparent 40%),
+      linear-gradient(180deg, #0d0d1a 0%, #1a1a2e 50%, #0d0d1a 100%);
+  }
+  #scene1 .mountain-silhouette {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg, transparent 0%, #0a0a15 30%, #060610 100%);
+  }
+  #scene1 .torch-light {
+    position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,140,30,0.15) 0%, rgba(255,80,20,0.05) 40%, transparent 70%);
+    border-radius: 50%; animation: torchFlicker 3s ease-in-out infinite;
+  }
+  @keyframes torchFlicker {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+  }
+
+  #scene2 { background: radial-gradient(ellipse at 50% 80%, #2e0a0a 0%, #0a0000 60%); }
+  #scene2 .scene-bg {
+    background:
+      radial-gradient(circle at 30% 60%, rgba(200,30,30,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 70% 50%, rgba(200,40,20,0.06) 0%, transparent 40%),
+      linear-gradient(180deg, #150505 0%, #2e0a0a 50%, #150505 100%);
+  }
+  #scene2 .battle-smoke {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 70%, rgba(80,20,10,0.2) 0%, transparent 70%);
+    animation: smokeDrift 8s ease-in-out infinite;
+  }
+  @keyframes smokeDrift {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
+    50% { transform: translateY(-10px) scale(1.05); opacity: 0.7; }
+  }
+
+  #scene3 { background: radial-gradient(ellipse at 50% 80%, #2a2a1a 0%, #0a0a05 60%); }
+  #scene3 .scene-bg {
+    background:
+      radial-gradient(circle at 50% 70%, rgba(200,180,100,0.1) 0%, transparent 50%),
+      linear-gradient(180deg, #15150a 0%, #2a2a1a 50%, #15150a 100%);
+  }
+  #scene3 .lamp-glow {
+    position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,200,100,0.12) 0%, rgba(200,150,60,0.05) 40%, transparent 70%);
+    border-radius: 50%; animation: lampWarm 4s ease-in-out infinite;
+  }
+  @keyframes lampWarm {
+    0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  }
+
+  #scene4 { background: radial-gradient(ellipse at 50% 80%, #0a0a1a 0%, #050510 60%); }
+  #scene4 .scene-bg {
+    background:
+      radial-gradient(circle at 50% 60%, rgba(200,100,40,0.15) 0%, transparent 40%),
+      linear-gradient(180deg, #0a0a18 0%, #0a0a1a 50%, #080815 100%);
+  }
+  #scene4 .bridge-lines {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 14px, rgba(200,150,100,0.06) 14px, rgba(200,150,100,0.06) 15px);
+    mask: radial-gradient(ellipse at 50% 60%, black 0%, transparent 70%);
+  }
+
+  #scene5 { background: radial-gradient(ellipse at 50% 80%, #c8d8e8 0%, #8898a8 60%); }
+  #scene5 .scene-bg {
+    background:
+      radial-gradient(circle at 50% 60%, rgba(255,255,255,0.5) 0%, transparent 50%),
+      linear-gradient(180deg, #d0dce8 0%, #b8c8d8 50%, #a0b0c0 100%);
+  }
+
+  #scene6 { background: radial-gradient(ellipse at 50% 80%, #3a1a0a 0%, #1a0505 60%); }
+  #scene6 .scene-bg {
+    background:
+      radial-gradient(circle at 50% 60%, rgba(255,200,60,0.2) 0%, transparent 40%),
+      radial-gradient(circle at 30% 50%, rgba(255,150,30,0.1) 0%, transparent 30%),
+      radial-gradient(circle at 70% 50%, rgba(255,150,30,0.1) 0%, transparent 30%),
+      linear-gradient(180deg, #1a0505 0%, #3a1a0a 50%, #1a0505 100%);
+  }
+
+  /* Mountain SVG backgrounds */
+  .mountains {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 50%; pointer-events: none;
+  }
+
+  /* Scene-specific text colors */
+  #scene5 .scene-title { background: linear-gradient(180deg, #3a3a5a 0%, #1a1a3a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  #scene5 .scene-subtitle { color: rgba(40,40,60,0.8); }
+  #scene5 .scene-number { color: #5a5a7a; }
+  #scene5 .scene-quote { color: #4a4a6a; border-left-color: #4a4a6a; }
+
+  /* Cinematic overlay */
+  .cinematic-bars {
+    position: absolute; inset: 0; pointer-events: none; z-index: 8;
+  }
+  .cinematic-bars::before, .cinematic-bars::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 8%;
+    background: rgba(0,0,0,0.3);
+    transition: height 1.5s ease;
+  }
+  .cinematic-bars::before { top: 0; }
+  .cinematic-bars::after { bottom: 0; }
+  .scene.visible .cinematic-bars::before,
+  .scene.visible .cinematic-bars::after { height: 0; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .scene-content { padding: 24px; }
+    #nav-dots { right: 10px; gap: 10px; }
+    #nav-dots a { width: 8px; height: 8px; }
+  }
+
+  /* Fade-in animation classes */
+  .fade-up {
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .scene.visible .fade-up { opacity: 1; transform: translateY(0); }
+  .scene.visible .fade-up.d1 { transition-delay: 0.1s; }
+  .scene.visible .fade-up.d2 { transition-delay: 0.3s; }
+  .scene.visible .fade-up.d3 { transition-delay: 0.5s; }
+  .scene.visible .fade-up.d4 { transition-delay: 0.7s; }
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<div id="progress-bar"></div>
+
+<div id="nav-dots">
+  <a href="#scene1" title="序章·出征"></a>
+  <a href="#scene2" title="湘江血战"></a>
+  <a href="#scene3" title="遵义会议"></a>
+  <a href="#scene4" title="飞夺泸定桥"></a>
+  <a href="#scene5" title="雪山草地"></a>
+  <a href="#scene6" title="胜利会师"></a>
+</div>
+
+<button id="audio-toggle" onclick="toggleAudio()" title="音乐开关">♪</button>
+<button id="autoplay-toggle" onclick="toggleAutoplay()" title="自动播放">▶</button>
+
+<!-- Scene 1: 序章·长征出发 -->
+<section class="scene" id="scene1">
+  <video class="scene-video" src="videos/1.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="torch-light"></div>
+  <div class="mountain-silhouette"></div>
+  <div class="scene-content">
+    <div class="scene-number fade-up">第一章</div>
+    <div class="scene-title fade-up d1">伟大的远征</div>
+    <div class="scene-subtitle fade-up d2">
+      1934年10月 · 江西瑞金<br>
+      第五次反"围剿"失利，中央红军踏上战略转移之路<br>
+      八万六千将士，从此开启两万五千里征程
+    </div>
+    <div class="scene-quote fade-up d3">
+      "红军不怕远征难，万水千山只等闲。"<br>
+      —— 毛泽东《七律·长征》
+    </div>
+  </div>
+</section>
+
+<!-- Scene 2: 湘江血战 -->
+<section class="scene" id="scene2">
+  <video class="scene-video" src="videos/2.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="battle-smoke"></div>
+  <div class="scene-content delay">
+    <div class="scene-number fade-up">第二章</div>
+    <div class="scene-title fade-up d1">湘江血战</div>
+    <div class="scene-subtitle fade-up d2">
+      1934年11月 · 湘江之畔<br>
+      红军以血肉之躯撕开敌军封锁线<br>
+      五万将士血染湘江，血水染红了江水
+    </div>
+    <div class="scene-quote fade-up d3">
+      "三年不饮湘江水，十年不食湘江鱼。"<br>
+      —— 湘江百姓口耳相传的悼念
+    </div>
+  </div>
+</section>
+
+<!-- Scene 3: 遵义会议 -->
+<section class="scene" id="scene3">
+  <video class="scene-video" src="videos/3.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="lamp-glow"></div>
+  <div class="scene-content delay">
+    <div class="scene-number fade-up">第三章</div>
+    <div class="scene-title fade-up d1">遵义会议</div>
+    <div class="scene-subtitle fade-up d2">
+      1935年1月 · 贵州遵义<br>
+      一次会议，挽救了党，挽救了红军，挽救了中国革命<br>
+      这是中国共产党历史上一个生死攸关的转折点
+    </div>
+    <div class="scene-quote fade-up d3">
+      "遵义会议的光芒，照亮了中国革命的前程。"<br>
+      —— 历史的回响
+    </div>
+  </div>
+</section>
+
+<!-- Scene 4: 飞夺泸定桥 -->
+<section class="scene" id="scene4">
+  <video class="scene-video" src="videos/4.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="bridge-lines"></div>
+  <div class="scene-content delay">
+    <div class="scene-number fade-up">第四章</div>
+    <div class="scene-title fade-up d1">飞夺泸定桥</div>
+    <div class="scene-subtitle fade-up d2">
+      1935年5月 · 大渡河上<br>
+      二十二勇士冒着枪林弹雨，攀着十三根铁链<br>
+      昼夜奔袭二百四十里，飞夺天险泸定桥
+    </div>
+    <div class="scene-quote fade-up d3">
+      "大渡桥横铁索寒。"<br>
+      —— 毛泽东《七律·长征》
+    </div>
+  </div>
+</section>
+
+<!-- Scene 5: 翻雪山过草地 -->
+<section class="scene" id="scene5">
+  <video class="scene-video" src="videos/5.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="scene-content delay">
+    <div class="scene-number fade-up">第五章</div>
+    <div class="scene-title fade-up d1">雪山·草地</div>
+    <div class="scene-subtitle fade-up d2">
+      1935年6月-8月 · 川西北<br>
+      翻越夹金山等数座大雪山，穿越松潘草地<br>
+      饥寒交迫中，多少人一坐下，就再也没有起来
+    </div>
+    <div class="scene-quote fade-up d3">
+      "更喜岷山千里雪，三军过后尽开颜。"<br>
+      —— 毛泽东《七律·长征》
+    </div>
+  </div>
+</section>
+
+<!-- Scene 6: 胜利会师 -->
+<section class="scene" id="scene6">
+  <video class="scene-video" src="videos/6.mp4" muted autoplay loop playsinline preload="auto"></video>
+  <div class="scene-video-overlay"></div>
+  <div class="scene-bg"></div>
+  <div class="cinematic-bars"></div>
+  <div class="scene-content delay">
+    <div class="scene-number fade-up">终章</div>
+    <div class="scene-title fade-up d1">胜利会师</div>
+    <div class="scene-subtitle fade-up d2">
+      1936年10月 · 甘肃会宁<br>
+      三大主力红军胜利会师，长征宣告结束<br>
+      两万五千里，三百六十八个日夜，中国革命的火种得以保存
+    </div>
+    <div class="scene-quote fade-up d3">
+      "长征是宣言书，长征是宣传队，长征是播种机。"<br>
+      —— 毛泽东
+    </div>
+  </div>
+</section>
+
+<script>
+// ── Particle System ──
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let currentScene = 0;
+let currentParticleType = 'rain';
+const sceneTypeMap = ['rain', 'ember', 'light', 'spark', 'snow', 'golden'];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor(type) {
+    this.type = type;
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = this.type === 'spark' ? canvas.height * 0.5 + Math.random() * 100 : -10;
+    this.size = 1;
+    this.alpha = 0;
+    switch (this.type) {
+      case 'rain':
+        this.vy = 6 + Math.random() * 10;
+        this.vx = -0.5;
+        this.size = 1 + Math.random();
+        this.len = 8 + Math.random() * 12;
+        break;
+      case 'ember':
+        this.vy = -(1 + Math.random() * 2);
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.size = 1.5 + Math.random() * 3;
+        break;
+      case 'light':
+        this.vy = -(0.4 + Math.random() * 0.8);
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.size = 2 + Math.random() * 4;
+        break;
+      case 'spark':
+        this.vy = -(3 + Math.random() * 6);
+        this.vx = (Math.random() - 0.5) * 3;
+        this.size = 2 + Math.random() * 3;
+        break;
+      case 'snow':
+        this.vy = 0.4 + Math.random() * 1.2;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.size = 2 + Math.random() * 5;
+        break;
+      case 'golden':
+        this.vy = -(1.5 + Math.random() * 3);
+        this.vx = (Math.random() - 0.5) * 2;
+        this.size = 2 + Math.random() * 5;
+        break;
+    }
+    this.alpha = 0.3 + Math.random() * 0.7;
+    this.life = 1;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.type === 'golden' ? 0.003 : this.type === 'light' ? 0.002 : 0.004;
+    if (this.type === 'rain') {
+      if (this.y > canvas.height) { this.y = -20; this.x = Math.random() * canvas.width; this.life = 1; this.alpha = 0.3 + Math.random() * 0.7; }
+    } else if (this.y < -30 || this.life <= 0 || (this.type === 'snow' && this.y > canvas.height)) {
+      this.reset();
+    }
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.alpha * this.life;
+    switch (this.type) {
+      case 'rain':
+        ctx.strokeStyle = '#8899bb';
+        ctx.lineWidth = this.size * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x + this.vx * 2, this.y + this.len);
+        ctx.stroke();
+        break;
+      case 'ember':
+        ctx.fillStyle = `hsl(${20 + Math.random() * 20}, 90%, ${50 + Math.random() * 40}%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 120, 20, 0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 'light':
+        ctx.fillStyle = 'rgba(255,210,140,0.8)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,180,80,0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 'spark':
+        ctx.fillStyle = `hsl(${25 + Math.random() * 15}, 95%, ${55 + Math.random() * 40}%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,160,30,0.5)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 'snow':
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(220,230,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 'golden':
+        const hue = 40 + Math.random() * 20;
+        ctx.fillStyle = `hsl(${hue}, 90%, ${55 + Math.random() * 30}%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.4)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+    }
+    ctx.restore();
+  }
+}
+
+function initParticles(type, count) {
+  particles = [];
+  for (let i = 0; i < count; i++) {
+    particles.push(new Particle(type));
+  }
+}
+initParticles('rain', 200);
+
+// Spawn extra particles for ember/spark scenes
+function getExtraSpawn() {
+  if (currentParticleType === 'ember') { for (let i = 0; i < 2; i++) particles.push(new Particle('ember')); }
+  if (currentParticleType === 'spark') { for (let i = 0; i < 3; i++) particles.push(new Particle('spark')); }
+  if (currentParticleType === 'golden') { for (let i = 0; i < 1; i++) particles.push(new Particle('golden')); }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  getExtraSpawn();
+  for (let p of particles) {
+    p.update();
+    p.draw(ctx);
+  }
+  // Remove dead particles
+  particles = particles.filter(p => p.life > 0);
+  // Maintain minimum count
+  const minParticles = { rain: 150, ember: 120, light: 80, spark: 100, snow: 120, golden: 150 };
+  const target = minParticles[currentParticleType] || 120;
+  while (particles.length < target) {
+    particles.push(new Particle(currentParticleType));
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ── Scene Detection ──
+const scenes = document.querySelectorAll('.scene');
+const dots = document.querySelectorAll('#nav-dots a');
+const progressBar = document.getElementById('progress-bar');
+
+// Autoplay variables (must be before observer callback)
+let autoplayActive = true;
+let autoplayTimer = null;
+const SCENE_DURATION = 8000;
+
+const observerOptions = { threshold: 0.5 };
+let observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      const idx = parseInt(entry.target.id.replace('scene', '')) - 1;
+      currentScene = idx;
+      updateNav(idx);
+      // Switch particle type
+      const targetType = sceneTypeMap[currentScene];
+      if (currentParticleType !== targetType) {
+        currentParticleType = targetType;
+        particles = [];
+        const counts = [150, 120, 80, 100, 120, 150];
+        initParticles(targetType, counts[currentScene]);
+      }
+      // Play video when scene becomes visible
+      const video = entry.target.querySelector('.scene-video');
+      if (video) {
+        video.play().then(() => { video.classList.add('playing'); }).catch(() => {});
+      }
+      // Restart autoplay when scene changes
+      if (autoplayActive) startAutoplay();
+    } else {
+      entry.target.classList.remove('visible');
+      const video = entry.target.querySelector('.scene-video');
+      if (video) { video.pause(); video.classList.remove('playing'); }
+    }
+  });
+}, observerOptions);
+
+scenes.forEach(s => observer.observe(s));
+
+// Set scene 1 visible on load
+document.getElementById('scene1').classList.add('visible');
+dots[0].classList.add('active');
+// Play scene 1 video on load
+const firstVideo = document.querySelector('#scene1 .scene-video');
+if (firstVideo) { firstVideo.play().then(() => { firstVideo.classList.add('playing'); }).catch(() => {}); }
+
+// Unlock video playback on first user interaction
+document.addEventListener('click', () => {
+  document.querySelectorAll('.scene-video').forEach(v => {
+    if (v.paused && v.closest('.scene.visible')) {
+      v.play().then(() => { v.classList.add('playing'); }).catch(() => {});
+    }
+  });
+}, { once: true });
+
+function updateNav(idx) {
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
+// ── Progress Bar on Scroll ──
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  progressBar.style.width = progress + '%';
+});
+
+// ── Audio (placeholder) ──
+let audioPlaying = false;
+function toggleAudio() {
+  const btn = document.getElementById('audio-toggle');
+  audioPlaying = !audioPlaying;
+  btn.textContent = audioPlaying ? '♪' : '♩';
+  btn.style.background = audioPlaying ? 'rgba(196,30,58,0.5)' : 'rgba(0,0,0,0.5)';
+}
+window.toggleAudio = toggleAudio;
+
+// ── Autoplay ──
+
+function startAutoplay() {
+  clearTimeout(autoplayTimer);
+  if (!autoplayActive) return;
+  autoplayTimer = setTimeout(() => {
+    if (currentScene < scenes.length - 1) {
+      scenes[currentScene + 1]?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Loop back to beginning
+      scenes[0]?.scrollIntoView({ behavior: 'smooth' });
+    }
+    // Restart timer after scroll
+    setTimeout(startAutoplay, 1500);
+  }, SCENE_DURATION);
+}
+
+function stopAutoplay() {
+  clearTimeout(autoplayTimer);
+}
+
+function toggleAutoplay() {
+  autoplayActive = !autoplayActive;
+  const btn = document.getElementById('autoplay-toggle');
+  btn.textContent = autoplayActive ? '▶' : '⏸';
+  btn.classList.toggle('playing', autoplayActive);
+  if (autoplayActive) {
+    startAutoplay();
+  } else {
+    stopAutoplay();
+  }
+}
+window.toggleAutoplay = toggleAutoplay;
+
+// Start autoplay on load
+document.getElementById('autoplay-toggle').classList.add('playing');
+startAutoplay();
+
+// ── Keyboard Navigation ──
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'j') {
+    e.preventDefault();
+    const next = Math.min(currentScene + 1, scenes.length - 1);
+    scenes[next]?.scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'k') {
+    e.preventDefault();
+    const prev = Math.max(currentScene - 1, 0);
+    scenes[prev]?.scrollIntoView({ behavior: 'smooth' });
+  }
+});
+
+// ── Touch swipe support ──
+let touchStartY = 0;
+window.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+window.addEventListener('touchend', e => {
+  const diff = touchStartY - e.changedTouches[0].clientY;
+  if (Math.abs(diff) > 60) {
+    if (diff > 0 && currentScene < scenes.length - 1) {
+      scenes[currentScene + 1]?.scrollIntoView({ behavior: 'smooth' });
+    } else if (diff < 0 && currentScene > 0) {
+      scenes[currentScene - 1]?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+});
+
+// ── Click dots to navigate ──
+dots.forEach((dot, i) => {
+  dot.addEventListener('click', (e) => {
+    e.preventDefault();
+    scenes[i]?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+
+</body>
+</html>

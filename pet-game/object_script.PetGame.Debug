@@ -1,0 +1,14 @@
+debug/main.o
+debug/pet.o
+debug/item.o
+debug/job.o
+debug/petmanager.o
+debug/mainwindow.o
+debug/shopdialog.o
+debug/jobdialog.o
+debug/qrc_resources.o
+debug/moc_job.o
+debug/moc_petmanager.o
+debug/moc_mainwindow.o
+debug/moc_shopdialog.o
+debug/moc_jobdialog.o

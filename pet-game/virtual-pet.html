@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pet — 虚拟伙伴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg-deep:#080810;--bg-card:rgba(255,255,255,.04);--border-card:rgba(255,255,255,.06);
+  --border-active:rgba(255,255,255,.12);--text-primary:#f0f0f5;--text-secondary:rgba(255,255,255,.45);
+  --text-muted:rgba(255,255,255,.25);--radius-md:18px;--radius-lg:28px;--radius-xl:36px;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);--ease-out-expo:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',-apple-system,sans-serif;min-height:100dvh;background:var(--bg-deep);
+  display:flex;align-items:center;justify-content:center;overflow-x:hidden;overflow-y:auto;
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;color:var(--text-primary);
+}
+/* Background */
+.bg-mesh{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.7}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(100px);animation:orbDrift 20s ease-in-out infinite}
+.bg-orb:nth-child(1){width:500px;height:500px;background:rgba(120,80,255,.25);top:-20%;left:-15%}
+.bg-orb:nth-child(2){width:400px;height:400px;background:rgba(255,100,150,.2);bottom:-15%;right:-10%;animation-delay:-7s;animation-duration:24s}
+.bg-orb:nth-child(3){width:350px;height:350px;background:rgba(80,200,255,.15);top:40%;left:60%;animation-delay:-14s;animation-duration:28s}
+@keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(8%,-6%) scale(1.15)}50%{transform:translate(-5%,10%) scale(.9)}75%{transform:translate(-10%,-3%) scale(1.1)}}
+.bg-noise{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")}
+
+/* App */
+.app{position:relative;z-index:1;width:420px;max-width:96vw;display:flex;flex-direction:column;gap:16px;padding:12px 0 24px}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
+.header-left{display:flex;align-items:center;gap:10px}
+.pet-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .5s}
+.pet-name{font-size:18px;font-weight:700;letter-spacing:-.3px;color:var(--text-primary)}
+.mood-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.5);transition:background .4s,box-shadow .4s}
+.header-right{display:flex;gap:8px}
+.badge{display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg-card);border:1px solid var(--border-card);backdrop-filter:blur(20px);transition:all .25s var(--ease-out-expo)}
+.badge.coins{color:#fbbf24}.badge.level{color:#a78bfa}
+.share-btn{padding:7px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(78,222,174,.1);border:1px solid rgba(78,222,174,.2);color:#4edeae;cursor:pointer;transition:all .2s;backdrop-filter:blur(20px)}
+.share-btn:hover{background:rgba(78,222,174,.2)}
+
+/* Pet Stage */
+.pet-stage{position:relative;height:280px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;overflow:hidden;backdrop-filter:blur(30px);box-shadow:0 0 80px rgba(120,100,255,.15),inset 0 1px 0 rgba(255,255,255,.04)}
+.cursor-glow{position:absolute;width:180px;height:180px;pointer-events:none;background:radial-gradient(circle,rgba(168,130,255,.25),transparent 70%);border-radius:50%;transform:translate(-50%,-50%);opacity:0;transition:opacity .4s;z-index:0}
+.pet-stage:hover .cursor-glow{opacity:1}
+.stage-ring{position:absolute;pointer-events:none;border:1px solid rgba(255,255,255,.04);border-radius:50%;animation:ringSpin 30s linear infinite}
+.stage-ring:nth-child(3){width:200px;height:200px}
+.stage-ring:nth-child(4){width:240px;height:240px;animation-duration:40s;animation-direction:reverse}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+
+/* Stage sparkles */
+.stage-sparkles{position:absolute;inset:0;pointer-events:none;z-index:1;display:none}
+.stage-sparkles.active{display:block}
+.sparkle-dot{position:absolute;border-radius:50%;animation:sparkleFloat 3s ease-in-out infinite}
+@keyframes sparkleFloat{0%,100%{transform:translateY(0) scale(1);opacity:.6}50%{transform:translateY(-18px) scale(1.8);opacity:1}}
+
+/* Pet base */
+.pet{cursor:pointer;position:relative;z-index:2;width:130px;height:140px;transition:transform .3s var(--ease-spring)}
+.pet:hover{transform:scale(1.06)}.pet:active{transform:scale(.94)}
+.pet-body{
+  width:115px;height:115px;
+  background:var(--pet-grad,radial-gradient(circle at 38% 32%,#ffb3b8,#ffc3c8 35%,#e8a0f0 70%,#c890f0 100%));
+  border-radius:52% 48% 44% 56% / 52% 48% 44% 48%;
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  box-shadow:var(--pet-shadow,0 0 50px rgba(200,140,240,.35),0 8px 32px rgba(0,0,0,.3),inset 0 -10px 25px rgba(0,0,0,.08),inset 0 10px 25px rgba(255,255,255,.25));
+  animation:petFloat 3.5s ease-in-out infinite;
+  transition:background .6s,box-shadow .6s;
+}
+.pet-body::before{content:'';position:absolute;width:42px;height:28px;background:rgba(255,255,255,.55);border-radius:50%;top:16px;left:29px;filter:blur(8px)}
+@keyframes petFloat{0%,100%{transform:translateX(-50%) translateY(0)}55%{transform:translateX(-50%) translateY(-14px)}}
+
+/* Stage 1 - 棉花糖 (white/fluffy) */
+.pet[data-stage="1"] .pet-body{
+  --pet-grad:radial-gradient(circle at 38% 32%,#fff,#ffe0f0 35%,#f0d0f8 70%,#e0c0f0 100%);
+  --pet-shadow:0 0 60px rgba(255,220,240,.45),0 8px 32px rgba(0,0,0,.2),inset 0 -10px 25px rgba(0,0,0,.05),inset 0 10px 25px rgba(255,255,255,.35);
+}
+.pet[data-stage="1"] .ear{background:linear-gradient(180deg,#ffe0f0 20%,#e8c8f0 80%)}
+
+/* Stage 2 - 星星糖 (gold/sparkle) */
+.pet[data-stage="2"] .pet-body{
+  --pet-grad:radial-gradient(circle at 38% 32%,#ffeaa7,#fdcb6e 35%,#f8b595 70%,#f0a0d0 100%);
+  --pet-shadow:0 0 60px rgba(255,200,100,.5),0 8px 32px rgba(0,0,0,.25),inset 0 -10px 25px rgba(0,0,0,.06),inset 0 10px 25px rgba(255,255,200,.3);
+}
+.pet[data-stage="2"] .ear{background:linear-gradient(180deg,#ffeaa7 20%,#f8b595 80%)}
+
+/* Stage 3 - 彩虹糖 (rainbow) */
+.pet[data-stage="3"] .pet-body{
+  --pet-grad:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 20%,#fad0c4 40%,#a18cd1 60%,#4facfe 80%,#43e97b 100%);
+  --pet-shadow:0 0 70px rgba(180,150,255,.5),0 0 40px rgba(100,200,255,.3),0 8px 32px rgba(0,0,0,.25),inset 0 -10px 25px rgba(0,0,0,.06),inset 0 10px 25px rgba(255,255,255,.3);
+  animation:petFloat 3s ease-in-out infinite,rainbowShift 4s linear infinite;
+}
+@keyframes rainbowShift{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.pet[data-stage="3"] .ear{background:linear-gradient(180deg,#ff9a9e,#a18cd1)}
+
+/* Stage 4 - 宇宙糖 (cosmic) */
+.pet[data-stage="4"] .pet-body{
+  --pet-grad:radial-gradient(circle at 38% 32%,#c0b0ff,#7b5ea7 35%,#2d1b69 70%,#0a0020 100%);
+  --pet-shadow:0 0 80px rgba(150,100,255,.6),0 0 30px rgba(100,150,255,.4),0 8px 32px rgba(0,0,0,.4),inset 0 -10px 25px rgba(0,0,0,.15),inset 0 10px 25px rgba(255,255,255,.15);
+  animation:petFloat 3s ease-in-out infinite,cosmicPulse 2s ease-in-out infinite;
+}
+@keyframes cosmicPulse{0%,100%{box-shadow:0 0 80px rgba(150,100,255,.6),0 0 30px rgba(100,150,255,.4),0 8px 32px rgba(0,0,0,.4)}50%{box-shadow:0 0 120px rgba(150,100,255,.8),0 0 60px rgba(100,200,255,.6),0 8px 32px rgba(0,0,0,.4)}}
+.pet[data-stage="4"] .ear{background:linear-gradient(180deg,#c0b0ff 20%,#5b3d8e 80%)}
+
+/* Eyes */
+.eyes{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);display:flex;gap:26px;z-index:3}
+.eye{width:18px;height:22px;background:#1a1a24;border-radius:50%;position:relative;animation:blink 5s ease-in-out infinite;overflow:hidden}
+.eye::before{content:'';position:absolute;width:7px;height:7px;background:#fff;border-radius:50%;top:5px;left:3px}
+.eye::after{content:'';position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;top:10px;left:12px}
+@keyframes blink{0%,48%,54%,100%{transform:scaleY(1)}51%{transform:scaleY(.08)}}
+
+/* Mouth */
+.mouth{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);width:15px;height:8px;border-bottom:3px solid #d94560;border-radius:0 0 15px 8px;z-index:3;transition:all .35s var(--ease-spring)}
+.mouth.happy{width:24px;height:13px;border-radius:0 0 24px 13px;border-bottom-color:#e85370}
+.mouth.sad{width:13px;height:7px;border-bottom:none;border-top:3px solid #d94560;border-radius:13px 7px 0 0;bottom:34px}
+
+/* Ears */
+.ear{position:absolute;z-index:1;width:30px;height:36px;background:linear-gradient(180deg,#ffb3b8 20%,#e098e8 80%);border-radius:50% 50% 25% 25%;bottom:82px;box-shadow:inset 0 2px 8px rgba(255,255,255,.25);transition:transform .3s var(--ease-spring)}
+.pet:hover .ear.left{transform:rotate(-20deg) scale(1.05)}.pet:hover .ear.right{transform:rotate(20deg) scale(1.05)}
+.ear.left{left:30px;transform:rotate(-15deg)}.ear.right{right:30px;transform:rotate(15deg)}
+.ear::after{content:'';position:absolute;width:20px;height:22px;background:rgba(255,190,200,.5);border-radius:50% 50% 25% 25%;top:4px;left:5px}
+
+/* Feet */
+.feet{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;gap:20px;z-index:2}
+.foot{width:22px;height:14px;background:linear-gradient(180deg,#e098e8,#c070d0);border-radius:50%;animation:footTap 2.2s ease-in-out infinite}
+.foot:nth-child(2){animation-delay:.4s}
+@keyframes footTap{0%,100%{transform:translateY(0)}25%{transform:translateY(-5px)}}
+
+/* Chat bubble */
+.chat-bubble{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:rgba(30,28,50,.92);color:#f0f0f5;backdrop-filter:blur(20px);padding:10px 18px;border-radius:18px;font-size:13px;font-weight:500;line-height:1.5;max-width:260px;text-align:center;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 32px rgba(0,0,0,.4);animation:bubbleIn .5s var(--ease-spring);z-index:20;pointer-events:none;letter-spacing:-.1px}
+.chat-bubble::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border-left:7px solid transparent;border-right:7px solid transparent;border-top:8px solid rgba(30,28,50,.92)}
+@keyframes bubbleIn{from{transform:translateX(-50%) translateY(14px) scale(.9);opacity:0}to{transform:translateX(-50%) translateY(0) scale(1);opacity:1}}
+
+/* Stat Rings */
+.stat-rings{display:flex;justify-content:space-around;padding:0 8px}
+.ring-item{display:flex;flex-direction:column;align-items:center;gap:7px}
+.ring-wrap{position:relative;width:56px;height:56px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:5}
+.ring-fg{fill:none;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .7s var(--ease-out-expo)}
+.ring-fg.hunger{stroke:#ff6b6b}.ring-fg.happy{stroke:#f78fbf}.ring-fg.energy{stroke:#60cfff}
+.ring-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+.ring-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
+
+/* Action Pills */
+.action-row{display:flex;gap:10px;padding:0 4px}
+.action-pill{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 10px;border-radius:var(--radius-md);background:var(--bg-card);border:1px solid var(--border-card);backdrop-filter:blur(20px);cursor:pointer;transition:all .25s var(--ease-out-expo);position:relative;overflow:hidden}
+.action-pill:hover{border-color:var(--border-active);transform:translateY(-2px)}
+.action-pill:active{transform:scale(.96)}
+.action-pill::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:inherit}
+.action-pill.feed::before{background:linear-gradient(180deg,rgba(255,107,107,.1),transparent)}
+.action-pill.play::before{background:linear-gradient(180deg,rgba(247,143,191,.1),transparent)}
+.action-pill.sleep::before{background:linear-gradient(180deg,rgba(96,207,255,.1),transparent)}
+.action-pill.clean::before{background:linear-gradient(180deg,rgba(78,222,174,.1),transparent)}
+.action-pill:hover::before{opacity:1}
+.action-pill .pill-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;transition:transform .3s var(--ease-spring)}
+.action-pill:hover .pill-icon{transform:scale(1.1)}
+.action-pill.feed .pill-icon{background:rgba(255,107,107,.15);color:#ff6b6b}
+.action-pill.play .pill-icon{background:rgba(247,143,191,.15);color:#f78fbf}
+.action-pill.sleep .pill-icon{background:rgba(96,207,255,.15);color:#60cfff}
+.action-pill.clean .pill-icon{background:rgba(78,222,174,.15);color:#4edeae}
+.action-pill .pill-label{font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:-.2px}
+
+/* Feed */
+.feed-panel{background:var(--bg-card);border:1px solid var(--border-card);border-radius:var(--radius-md);padding:14px 16px;backdrop-filter:blur(20px);min-height:46px;display:flex;align-items:center;justify-content:center}
+.feed-text{font-size:12px;font-weight:500;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.feed-dot{width:5px;height:5px;border-radius:50%;background:#a78bfa;flex-shrink:0}
+
+/* ====================== Game Overlay ====================== */
+.game-overlay{position:fixed;inset:0;background:rgba(4,4,16,.88);backdrop-filter:blur(12px);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .25s var(--ease-out-expo)}
+@keyframes fadeIn{from{opacity:0}}
+.game-panel{background:linear-gradient(160deg,rgba(20,18,40,.95),rgba(14,12,30,.95));border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-xl);padding:28px 24px 20px;width:380px;max-width:92vw;text-align:center;box-shadow:0 32px 64px rgba(0,0,0,.6)}
+.game-panel h3{font-size:20px;font-weight:800;letter-spacing:-.3px;margin-bottom:2px}
+.game-subtitle{color:var(--text-muted);font-size:12px;font-weight:500;margin-bottom:14px}
+.game-score{font-size:52px;font-weight:900;letter-spacing:-2px;background:linear-gradient(135deg,#fff 30%,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.game-timer{height:3px;background:rgba(255,255,255,.06);border-radius:3px;margin:12px 0;overflow:hidden}
+.game-timer-bar{height:100%;background:#ff6b6b;border-radius:3px;transition:width .1s linear}
+.game-area{position:relative;width:100%;height:240px;background:rgba(255,255,255,.02);border-radius:var(--radius-md);margin:10px 0;overflow:hidden;border:1px solid rgba(255,255,255,.04)}
+.game-close{margin-top:10px;padding:10px 28px;border-radius:22px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text-secondary);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s}
+.game-close:hover{background:rgba(255,255,255,.08);color:#fff}
+
+/* === Feed Game: Catch === */
+.food-item{position:absolute;font-size:26px;animation:foodFall linear forwards;pointer-events:none}
+@keyframes foodFall{0%{transform:translateY(-8px) rotate(0deg);opacity:1}100%{transform:translateY(260px) rotate(200deg);opacity:.5}}
+.catcher{position:absolute;bottom:4px;width:72px;height:16px;background:linear-gradient(180deg,rgba(255,107,107,.8),rgba(238,90,36,.6));border-radius:20px 20px 6px 6px;left:50%;transform:translateX(-50%);transition:left .06s;box-shadow:0 0 20px rgba(255,107,107,.3)}
+
+/* === Play Game: Whack-a-Mole === */
+.mole-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 20px;height:100%}
+.mole-hole{position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:rgba(0,0,0,.2);border-radius:50% 50% 10% 10%;cursor:pointer;min-height:60px}
+.mole-hole::after{content:'';position:absolute;bottom:0;width:80%;height:12px;background:rgba(0,0,0,.3);border-radius:50%}
+.mole-creature{font-size:36px;position:absolute;bottom:-5px;transform:translateY(100%);transition:transform .12s var(--ease-spring);pointer-events:none}
+.mole-creature.show{transform:translateY(0)}
+.mole-creature.pest{font-size:32px}
+
+/* === Sleep Game: Sheep Counting === */
+.sleep-scene{position:relative;width:100%;height:100%;background:linear-gradient(180deg,#0a0a20,#141428);overflow:hidden}
+.sleep-sheep{position:absolute;font-size:34px;animation:sheepWalk linear forwards;cursor:pointer;transition:transform .15s}
+.sleep-sheep:active{transform:scale(1.4)}
+.sleep-sheep.counted{animation:none;opacity:0;transform:scale(2);transition:all .3s ease-out}
+@keyframes sheepWalk{0%{left:-40px}100%{left:105%}}
+.sleep-fence{position:absolute;right:2px;top:10%;bottom:10%;width:3px;background:rgba(255,255,255,.1);border-radius:2px}
+.sleep-fence::after{content:'🐑';position:absolute;top:-30px;left:-15px;font-size:22px;animation:fenceJump .6s ease-in-out infinite alternate}
+@keyframes fenceJump{0%{transform:translateY(0)}100%{transform:translateY(-8px)}}
+
+/* === Clean Game: Scrub Dirt === */
+.clean-surface{position:relative;width:100%;height:100%;background:linear-gradient(180deg,rgba(78,222,174,.06),rgba(56,249,215,.04));overflow:hidden}
+.dirt-spot{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(80,50,30,.7),rgba(60,35,20,.4) 40%,transparent 70%);cursor:pointer;transition:transform .15s,opacity .3s}
+.dirt-spot:active{transform:scale(.8)}
+.dirt-spot.cleaning{transform:scale(.7);opacity:.5}
+.dirt-spot.gone{transform:scale(0);opacity:0}
+
+/* Mood/Effects */
+.mood-pop{position:absolute;font-size:34px;pointer-events:none;animation:moodUp .7s var(--ease-out-expo) forwards;z-index:20}
+@keyframes moodUp{0%{transform:scale(0) translateY(0);opacity:1}100%{transform:scale(1.1) translateY(-36px);opacity:0}}
+.eat-emoji{position:absolute;font-size:30px;animation:eatFly .8s var(--ease-out-expo) forwards;pointer-events:none}
+@keyframes eatFly{0%{transform:scale(0) rotate(0deg);opacity:1}100%{transform:scale(1.4) rotate(25deg) translateY(-35px);opacity:0}}
+
+/* Event modal */
+.event-modal{position:fixed;inset:0;background:rgba(4,4,16,.75);backdrop-filter:blur(8px);z-index:300;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s var(--ease-out-expo)}
+.event-card{background:linear-gradient(150deg,rgba(22,20,42,.96),rgba(16,14,34,.96));border:1px solid rgba(255,215,0,.2);border-radius:var(--radius-xl);padding:36px 28px 28px;width:340px;max-width:88vw;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(255,215,0,.06)}
+.event-card .event-icon{font-size:56px;margin-bottom:14px}
+.event-card h3{color:#fbbf24;font-size:18px;font-weight:800;letter-spacing:-.2px;margin-bottom:8px}
+.event-card p{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:4px}
+.event-card .reward{color:#f59e0b;font-weight:700;font-size:14px;margin:14px 0}
+.event-card button{margin-top:8px;padding:12px 40px;border-radius:24px;border:none;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a1a24;font-weight:700;font-size:14px;cursor:pointer;transition:all .25s var(--ease-spring);box-shadow:0 6px 20px rgba(245,158,11,.3)}
+.event-card button:hover{transform:scale(1.04)}.event-card button:active{transform:scale(.96)}
+
+/* Achievement */
+.achieve-toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(20,20,40,.96),rgba(16,14,34,.96));backdrop-filter:blur(20px);border:1px solid rgba(255,215,0,.25);color:#fbbf24;padding:12px 24px;border-radius:28px;font-weight:700;font-size:13px;z-index:400;box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 20px rgba(255,215,0,.08);animation:toastIn .6s var(--ease-spring),toastOut .5s 2.6s var(--ease-out-expo) forwards}
+@keyframes toastIn{from{transform:translateX(-50%) translateY(-70px);opacity:0}}
+@keyframes toastOut{to{transform:translateX(-50%) translateY(-70px);opacity:0}}
+
+/* Evolution OVERHAUL */
+.evo-overlay{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;animation:evoFade 3.5s var(--ease-out-expo) forwards;overflow:hidden}
+.evo-bg{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,215,0,.25),rgba(168,130,255,.15),rgba(0,0,0,.92))}
+.evo-particles{position:absolute;inset:0}
+.evo-particle{position:absolute;border-radius:50%;animation:evoBurst 2s var(--ease-out-expo) forwards}
+@keyframes evoBurst{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+.evo-ring{position:absolute;width:300px;height:300px;border:2px solid rgba(255,215,0,.3);border-radius:50%;animation:evoRingExpand 2.5s var(--ease-out-expo) forwards}
+@keyframes evoRingExpand{0%{transform:scale(0);opacity:1}100%{transform:scale(3);opacity:0}}
+.evo-text{font-size:52px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#fbbf24,#f59e0b,#fbbf24);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer .8s linear infinite,evoScale 3.5s var(--ease-out-expo) forwards;z-index:1;text-align:center}
+.evo-sub{font-size:16px;font-weight:600;color:rgba(255,255,255,.6);z-index:1;margin-top:8px;animation:evoFadeIn .8s .3s var(--ease-out-expo) forwards;opacity:0}
+@keyframes shimmer{to{background-position:200% center}}
+@keyframes evoScale{0%{transform:scale(.1);opacity:0}30%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes evoFadeIn{to{opacity:1}}
+@keyframes evoFade{0%{opacity:1}60%{opacity:1}100%{opacity:0}}
+
+/* Mobile */
+@media(max-width:420px){
+  .app{gap:12px;padding:8px 0 16px}
+  .pet-stage{height:230px;border-radius:var(--radius-md)}
+  .pet-body{width:90px;height:90px}
+  .eyes{bottom:42px;gap:20px}.eye{width:15px;height:18px}
+  .ear{width:26px;height:30px;bottom:66px}
+  .ear.left{left:34px}.ear.right{right:34px}
+  .foot{width:18px;height:12px}.mouth{bottom:28px}
+  .chat-bubble{font-size:11px;max-width:200px;padding:8px 14px}
+  .ring-wrap{width:48px;height:48px}.ring-icon{font-size:17px}
+  .action-pill{padding:14px 6px}.action-pill .pill-icon{width:34px;height:34px;font-size:15px}.action-pill .pill-label{font-size:11px}
+  .game-panel{padding:22px 16px 16px}.game-area{height:200px}
+  .mole-grid{gap:6px;padding:10px 14px}.mole-creature{font-size:28px}
+  .evo-text{font-size:36px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div></div>
+<div class="bg-noise"></div>
+
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="pet-avatar" id="petAvatar" style="background:linear-gradient(135deg,#ff9a9e,#f093fb);box-shadow:0 4px 16px rgba(240,147,251,.3)">🐣</div>
+      <div><div class="pet-name" id="petNameDisplay">小团子</div></div>
+      <div class="mood-dot" id="moodDot"></div>
+    </div>
+    <div class="header-right">
+      <button class="share-btn" onclick="shareLink()" title="分享给朋友"><i class="fa-solid fa-share-nodes"></i></button>
+      <div class="badge coins"><i class="fa-solid fa-coins" style="font-size:10px"></i> <span id="coinCount">0</span></div>
+      <div class="badge level">Lv.<span id="petLevel">1</span></div>
+    </div>
+  </div>
+
+  <div class="pet-stage" id="petStage">
+    <div class="cursor-glow" id="cursorGlow"></div>
+    <div class="stage-ring"></div><div class="stage-ring"></div>
+    <div class="stage-sparkles" id="stageSparkles"></div>
+    <div class="pet" id="pet" data-stage="0" title="点击互动">
+      <div class="ear left"></div><div class="ear right"></div>
+      <div class="pet-body"></div>
+      <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+      <div class="mouth" id="mouth"></div>
+      <div class="feet"><div class="foot"></div><div class="foot"></div></div>
+    </div>
+  </div>
+
+  <div class="stat-rings">
+    <div class="ring-item">
+      <div class="ring-wrap"><svg viewBox="0 0 56 56"><circle class="ring-bg" cx="28" cy="28" r="24"/><circle class="ring-fg hunger" id="hungerRing" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="30"/></svg><div class="ring-icon">🍖</div></div>
+      <span class="ring-label">饱腹</span>
+    </div>
+    <div class="ring-item">
+      <div class="ring-wrap"><svg viewBox="0 0 56 56"><circle class="ring-bg" cx="28" cy="28" r="24"/><circle class="ring-fg happy" id="happyRing" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="45"/></svg><div class="ring-icon">💖</div></div>
+      <span class="ring-label">心情</span>
+    </div>
+    <div class="ring-item">
+      <div class="ring-wrap"><svg viewBox="0 0 56 56"><circle class="ring-bg" cx="28" cy="28" r="24"/><circle class="ring-fg energy" id="energyRing" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="60"/></svg><div class="ring-icon">⚡</div></div>
+      <span class="ring-label">体力</span>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <div class="action-pill feed" onclick="startMiniGame('feed')"><div class="pill-icon"><i class="fa-solid fa-utensils"></i></div><span class="pill-label">喂食</span></div>
+    <div class="action-pill play" onclick="startMiniGame('play')"><div class="pill-icon"><i class="fa-solid fa-gamepad"></i></div><span class="pill-label">玩耍</span></div>
+    <div class="action-pill sleep" onclick="startMiniGame('sleep')"><div class="pill-icon"><i class="fa-solid fa-cloud-moon"></i></div><span class="pill-label">睡觉</span></div>
+    <div class="action-pill clean" onclick="startMiniGame('clean')"><div class="pill-icon"><i class="fa-solid fa-soap"></i></div><span class="pill-label">洗澡</span></div>
+  </div>
+
+  <div class="feed-panel" id="eventPanel"><span class="feed-text" id="eventLog"><span class="feed-dot"></span> 你的小团子诞生了！</span></div>
+</div>
+
+<script>
+// ==================== PET ENGINE ====================
+const CIRCUMFERENCE = 2*Math.PI*24;
+const API_BASE = window.location.hostname==='localhost'?'http://localhost:3456':`http://${window.location.hostname}:3456`;
+
+const pet={name:'小团子',hunger:80,happy:70,energy:60,level:1,exp:0,expNeed:80,coins:0,stage:0,totalActions:0,achievements:{}};
+
+const STAGES=['小团子','棉花糖','星星糖','彩虹糖','宇宙糖'];
+const AVATARS=['🐣','🐥','⭐','🌈','🌌'];
+const AVATAR_GRADS=['linear-gradient(135deg,#ff9a9e,#f093fb)','linear-gradient(135deg,#ffe0f0,#e8c8f0)','linear-gradient(135deg,#ffeaa7,#f8b595)','linear-gradient(135deg,#ff9a9e,#a18cd1)','linear-gradient(135deg,#7b5ea7,#2d1b69)'];
+
+function localChatReply(){
+  const h=pet.hunger,hp=pet.happy,e=pet.energy,n=pet.name;
+  if(h<20)return`${n}肚子咕咕叫~ 主人快给我好吃的！🍖`;
+  if(hp<20)return`呜...${n}好孤单，主人陪我玩嘛...`;
+  if(e<20)return`呼...${n}困得睁不开眼了...Zzz`;
+  if(h>80&&hp>80&&e>80)return`主人！${n}今天状态超棒~ 去冒险吧！🌟`;
+  const l=[`主人看我看我！${n}会转圈圈了！`,`今天天气真好呀~适合和主人一起发呆`,`${n}刚看到一只超好看的蝴蝶！🦋`,`主人辛苦啦！${n}给你捶捶背！（虽然没手）`,`云朵是什么味道的呢？${n}觉得是棉花糖味~`,`跟主人在一起就是最开心的！`];
+  return l[Math.floor(Math.random()*l.length)];
+}
+
+async function chatWithPet(userMsg){
+  try{
+    const r=await fetch(`${API_BASE}/api/pet/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({petState:pet,userMessage:userMsg||''})});
+    const d=await r.json();showChatBubble(d.reply);
+  }catch(e){showChatBubble(localChatReply())}
+}
+
+function showChatBubble(text){
+  const s=document.getElementById('petStage'),old=s.querySelector('.chat-bubble');
+  if(old)old.remove();
+  const b=document.createElement('div');b.className='chat-bubble';b.textContent=text;s.appendChild(b);
+  clearTimeout(b._timer);b._timer=setTimeout(()=>{if(b.parentNode)b.remove()},4500);
+}
+function popMood(emoji){
+  const s=document.getElementById('petStage'),el=document.createElement('div');
+  el.className='mood-pop';el.textContent=emoji;el.style.left=(40+Math.random()*40)+'%';el.style.top='30%';
+  s.appendChild(el);setTimeout(()=>el.remove(),700);
+}
+function showAchievement(title){
+  const t=document.createElement('div');t.className='achieve-toast';t.textContent='🏆 '+title;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3200);
+}
+
+// ==================== ENHANCED EVOLUTION ====================
+function showEvolution(){
+  const o=document.createElement('div');o.className='evo-overlay';
+  const colors=['#fbbf24','#f59e0b','#ffd700','#ffaa00','#a78bfa','#f78fbf','#ff6b6b','#60cfff','#4edeae'];
+  let particlesHTML='';
+  for(let i=0;i<60;i++){
+    const c=colors[Math.floor(Math.random()*colors.length)],s=4+Math.random()*8;
+    const dx=(Math.random()-.5)*400,dy=(Math.random()-.5)*400;
+    particlesHTML+=`<div class="evo-particle" style="left:50%;top:50%;width:${s}px;height:${s}px;background:${c};--dx:${dx}px;--dy:${dy}px;animation-delay:${Math.random()*.6}s;animation-duration:${1.5+Math.random()*1.5}s;box-shadow:0 0 ${s*3}px ${c}"></div>`;
+  }
+  o.innerHTML=`<div class="evo-bg"></div><div class="evo-particles">${particlesHTML}</div><div class="evo-ring"></div><div class="evo-ring" style="animation-delay:.3s;width:200px;height:200px"></div><div class="evo-text">✨ ${pet.name} 进化！</div><div class="evo-sub">${STAGES[Math.min(pet.stage-1,3)]} → ${pet.name}</div>`;
+  document.body.appendChild(o);setTimeout(()=>o.remove(),3600);
+}
+
+function showEventModal(eventData){
+  const m=document.createElement('div');m.className='event-modal';
+  m.innerHTML=`<div class="event-card"><div class="event-icon">${eventData.mood||'🎁'}</div><h3>${eventData.title}</h3><p>${eventData.story}</p><div class="reward">🪙 +${eventData.reward.coins} 金币 &nbsp;⭐ +${eventData.reward.exp} 经验</div><button id="eventClaimBtn">收下！</button></div>`;
+  document.body.appendChild(m);
+  m.querySelector('#eventClaimBtn').addEventListener('click',()=>{pet.coins+=eventData.reward.coins;addExp(eventData.reward.exp);updateUI();m.remove()});
+}
+
+const LOCAL_EVENTS=[
+  {title:'草丛闪光',story:'草丛里发现了闪闪发光的硬币！',reward:{coins:15,exp:20},mood:'🤩'},
+  {title:'迷路蝴蝶',story:'一只小蝴蝶停在鼻尖上，你帮它找到了回家的路。',reward:{coins:10,exp:25},mood:'🦋'},
+  {title:'花瓣雨',story:'天上突然下起了花瓣雨，原来是风婆婆的礼物！',reward:{coins:20,exp:30},mood:'🌸'},
+  {title:'神秘食谱',story:'树洞里发现了一张泛黄的食谱，上面画着发光的食材。',reward:{coins:25,exp:35},mood:'📜'},
+  {title:'小猫朋友',story:'一只流浪小猫路过，你们玩了一下午，它分享了小鱼干！',reward:{coins:12,exp:18},mood:'🐱'},
+  {title:'彩虹滑梯',story:'雨后出现了一座小彩虹，你沿着它滑了下来！',reward:{coins:30,exp:40},mood:'🌈'},
+  {title:'地精礼物',story:'害羞的小地精从土里钻出来，塞给你一颗魔法糖果。',reward:{coins:18,exp:22},mood:'🍬'},
+  {title:'流星碎片',story:'一颗小流星落在院子里，碎片散发出温暖的光芒。',reward:{coins:35,exp:45},mood:'⭐'},
+];
+
+async function triggerRandomEvent(){
+  pet.totalActions++;
+  try{
+    const r=await fetch(`${API_BASE}/api/pet/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({petState:pet})});
+    const d=await r.json();showEventModal(d);
+  }catch(e){showEventModal(LOCAL_EVENTS[Math.floor(Math.random()*LOCAL_EVENTS.length)])}
+}
+
+function addExp(amount){
+  pet.exp+=amount;
+  while(pet.exp>=pet.expNeed){
+    pet.exp-=pet.expNeed;pet.level++;pet.expNeed=Math.floor(pet.expNeed*1.3);
+    const oldStage=pet.stage;pet.stage=Math.min(4,Math.floor((pet.level-1)/3));
+    pet.name=STAGES[pet.stage];
+    showAchievement(`升级到 Lv.${pet.level}！（${pet.name}）`);
+    if(pet.stage>oldStage)showEvolution();
+  }
+  updateUI();
+}
+
+function applyGameResult(type,score,maxScore){
+  const ratio=score/maxScore;
+  let b={hunger:0,happy:0,energy:0,coins:0,exp:0};
+  switch(type){
+    case'feed':b.hunger=Math.floor(ratio*30)+10;b.happy=Math.floor(ratio*10);b.coins=Math.floor(ratio*8);b.exp=Math.floor(ratio*30);break;
+    case'play':b.happy=Math.floor(ratio*30)+10;b.hunger=-Math.floor((1-ratio)*15);b.coins=Math.floor(ratio*10);b.exp=Math.floor(ratio*35);break;
+    case'sleep':b.energy=Math.floor(ratio*35)+10;b.hunger=-Math.floor((1-ratio)*12);b.exp=Math.floor(ratio*25);break;
+    case'clean':b.happy=Math.floor(ratio*20)+5;b.energy=Math.floor(ratio*10);b.coins=Math.floor(ratio*6);b.exp=Math.floor(ratio*20);break;
+  }
+  pet.hunger=Math.min(100,Math.max(0,pet.hunger+b.hunger));
+  pet.happy=Math.min(100,Math.max(0,pet.happy+b.happy));
+  pet.energy=Math.min(100,Math.max(0,pet.energy+b.energy));
+  pet.coins+=b.coins;addExp(b.exp);
+  if(Math.random()<0.3+ratio*0.2)setTimeout(()=>triggerRandomEvent(),800);
+  updateUI();
+}
+
+// ==================== MINI-GAME ENGINE ====================
+let gameActive=false,gameScore=0,gameMaxScore=10,gameTimer=null,gameDuration=8000;
+
+function startMiniGame(type){
+  if(gameActive)return;
+  gameActive=true;gameScore=0;
+  const names={feed:'🍖 美食接接乐',play:'🔨 打地鼠大作战',sleep:'🐑 数羊入眠',clean:'🧹 洗刷刷'};
+  const o=document.createElement('div');o.className='game-overlay';o.id='gameOverlay';
+  o.innerHTML=`<div class="game-panel"><h3>${names[type]}</h3><div class="game-subtitle" id="gameSubtitle">准备...</div><div class="game-score" id="gameScoreDisplay">0</div><div class="game-timer"><div class="game-timer-bar" id="gameTimerBar" style="width:100%"></div></div><div class="game-area" id="gameArea"></div><button class="game-close" id="gameCloseBtn">提前结束</button></div>`;
+  document.body.appendChild(o);
+  document.getElementById('gameCloseBtn').addEventListener('click',()=>endMiniGame(type));
+  switch(type){case'feed':initFeedGame();break;case'play':initMoleGame();break;case'sleep':initSheepGame();break;case'clean':initScrubGame();break}
+  let left=gameDuration;
+  gameTimer=setInterval(()=>{left-=100;const el=document.getElementById('gameTimerBar');if(el)el.style.width=(left/gameDuration*100)+'%';if(left<=0)endMiniGame(type)},100);
+}
+
+function endMiniGame(type){
+  gameActive=false;clearInterval(gameTimer);clearInterval(window._gi);clearInterval(window._gi2);
+  const o=document.getElementById('gameOverlay');if(o)o.remove();
+  const ratio=gameScore/gameMaxScore,g=ratio>=0.9?'完美！🌟':ratio>=0.6?'不错！👏':ratio>=0.3?'还行~':'加油哦💪';
+  showChatBubble(`${g} 得分: ${gameScore}`);popMood(ratio>=0.6?'🥳':'😅');
+  applyGameResult(type,gameScore,gameMaxScore);
+}
+
+// ====== Feed: 接食物 (keep) ======
+function initFeedGame(){gameMaxScore=20;const a=document.getElementById('gameArea');document.getElementById('gameSubtitle').textContent='移动碗接住食物，避开💀';const catcher=document.createElement('div');catcher.className='catcher';catcher.id='catcher';a.appendChild(catcher);const foods=['🍖','🍎','🍰','🍩','🧀','🍗','🍓','🍕','🍦','🍪'],bad=['💀','🧨'];let c=0;function spawn(){if(!gameActive||c>=25)return;c++;const isB=Math.random()<0.15,items=isB?bad:foods,f=document.createElement('div');f.className='food-item';f.textContent=items[Math.floor(Math.random()*items.length)];f.dataset.bad=isB;f.style.left=(5+Math.random()*75)+'%';f.style.animationDuration=(1.8+Math.random()*2)+'s';a.appendChild(f);const chk=setInterval(()=>{if(!gameActive||!f.parentNode){clearInterval(chk);return}const fr=f.getBoundingClientRect(),cr=catcher.getBoundingClientRect();if(fr.bottom>=cr.top&&fr.left<cr.right&&fr.right>cr.left){if(f.dataset.bad==='true')gameScore=Math.max(0,gameScore-1);else{gameScore++;const e=document.createElement('div');e.className='eat-emoji';e.textContent='😋';e.style.left=f.style.left;e.style.bottom='18px';a.appendChild(e);setTimeout(()=>e.remove(),800)}f.remove();clearInterval(chk);document.getElementById('gameScoreDisplay').textContent=gameScore}if(fr.top>a.getBoundingClientRect().bottom){f.remove();clearInterval(chk)}},50)}window._gi=setInterval(spawn,550);function move(e){if(!gameActive)return;const r=a.getBoundingClientRect(),x=(e.clientX||(e.touches&&e.touches[0].clientX))-r.left;catcher.style.left=Math.max(5,Math.min(85,x/r.width*100))+'%'}a.addEventListener('mousemove',move);a.addEventListener('touchmove',e=>{e.preventDefault();move(e)})}
+
+// ====== Play: 打地鼠 (NEW) ======
+function initMoleGame(){gameMaxScore=15;const a=document.getElementById('gameArea');document.getElementById('gameSubtitle').textContent='打可爱小地鼠！别打错小兔子 🐰';a.innerHTML='<div class="mole-grid" id="moleGrid"></div>';const grid=document.getElementById('moleGrid');const pests=['🐭','🐀','🪳','🕷️','👾'],friends=['🐰','🐹','🐿️','🐣','🦊'];for(let i=0;i<6;i++){const hole=document.createElement('div');hole.className='mole-hole';const creature=document.createElement('div');creature.className='mole-creature';hole.appendChild(creature);hole.addEventListener('click',e=>{if(!gameActive)return;e.stopPropagation();const cr=creature;if(!cr.classList.contains('show'))return;cr.classList.remove('show');if(cr.dataset.pest==='true'){gameScore++;document.getElementById('gameScoreDisplay').textContent=gameScore;cr.style.color='#ff6b6b';setTimeout(()=>cr.style.color='',200)}else{gameScore=Math.max(0,gameScore-1);cr.style.color='#4ade80';setTimeout(()=>cr.style.color='',200)}});grid.appendChild(hole)}
+  function showRandom(){if(!gameActive)return;const holes=grid.querySelectorAll('.mole-hole');const h=holes[Math.floor(Math.random()*holes.length)];const cr=h.querySelector('.mole-creature');if(cr.classList.contains('show'))return;const isPest=Math.random()<0.7;cr.textContent=(isPest?pests:friends)[Math.floor(Math.random()*(isPest?pests:friends).length)];cr.dataset.pest=isPest;cr.className=`mole-creature ${isPest?'pest':'friend'} show`;setTimeout(()=>cr.classList.remove('show'),600+Math.random()*500);if(gameActive)setTimeout(showRandom,400+Math.random()*500)}showRandom()}
+
+// ====== Sleep: 数羊 (NEW) ======
+function initSheepGame(){gameMaxScore=15;const a=document.getElementById('gameArea');document.getElementById('gameSubtitle').textContent='点击跳过栅栏的小羊 🐑';a.innerHTML='<div class="sleep-scene"><div class="sleep-fence"></div></div>';const scene=a.querySelector('.sleep-scene');const sheepEmojis=['🐑','🐏','🐑','🐏','🐑','🌟'];let spawned=0;function spawnSheep(){if(!gameActive||spawned>=18)return;spawned++;const s=document.createElement('div');s.className='sleep-sheep';s.textContent=sheepEmojis[Math.floor(Math.random()*sheepEmojis.length)];s.style.top=(15+Math.random()*65)+'%';const speed=3+Math.random()*5;s.style.animationDuration=speed+'s';scene.appendChild(s);let counted=false;s.addEventListener('click',e=>{if(counted||!gameActive)return;counted=true;e.stopPropagation();gameScore++;document.getElementById('gameScoreDisplay').textContent=gameScore;s.classList.add('counted');const p=document.createElement('div');p.className='eat-emoji';p.textContent='💤';p.style.left=s.style.left;p.style.top=s.style.top;a.appendChild(p);setTimeout(()=>{s.remove();p.remove()},300)});setTimeout(()=>{if(!counted)s.remove()},speed*1000+200);if(spawned<18&&gameActive)setTimeout(spawnSheep,700+Math.random()*800)}spawnSheep()}
+
+// ====== Clean: 擦污渍 (NEW) ======
+function initScrubGame(){gameMaxScore=15;const a=document.getElementById('gameArea');document.getElementById('gameSubtitle').textContent='快速擦拭污渍！每个需要擦3下 🧽';a.innerHTML='<div class="clean-surface" id="cleanSurface"></div>';const surface=document.getElementById('cleanSurface');let spotCount=0;function createSpot(){if(!gameActive||spotCount>=8)return;spotCount++;const s=document.createElement('div');s.className='dirt-spot';const size=35+Math.random()*45;s.style.width=size+'px';s.style.height=size+'px';s.style.left=(5+Math.random()*80)+'%';s.style.top=(5+Math.random()*80)+'%';s.dataset.scrubs='0';s.dataset.needed=2+Math.floor(Math.random()*3);surface.appendChild(s);s.addEventListener('click',e=>{e.stopPropagation();s.dataset.scrubs=parseInt(s.dataset.scrubs)+1;s.classList.add('cleaning');setTimeout(()=>s.classList.remove('cleaning'),120);if(parseInt(s.dataset.scrubs)>=parseInt(s.dataset.needed)){gameScore++;document.getElementById('gameScoreDisplay').textContent=gameScore;s.classList.add('gone');const p=document.createElement('div');p.className='eat-emoji';p.textContent='✨';p.style.left=s.style.left;p.style.top=s.style.top;a.appendChild(p);setTimeout(()=>{s.remove();p.remove();createSpot()},300)}});if(spotCount<5&&gameActive)setTimeout(createSpot,600+Math.random()*500)}for(let i=0;i<3;i++)createSpot()}
+
+// ==================== UI ====================
+function updateUI(){
+  document.getElementById('hungerRing').style.strokeDashoffset=CIRCUMFERENCE-(pet.hunger/100*CIRCUMFERENCE);
+  document.getElementById('happyRing').style.strokeDashoffset=CIRCUMFERENCE-(pet.happy/100*CIRCUMFERENCE);
+  document.getElementById('energyRing').style.strokeDashoffset=CIRCUMFERENCE-(pet.energy/100*CIRCUMFERENCE);
+  document.getElementById('petLevel').textContent=pet.level;
+  document.getElementById('coinCount').textContent=pet.coins;
+  document.getElementById('petNameDisplay').textContent=pet.name;
+  const pet_=document.getElementById('pet');
+  pet_.dataset.stage=pet.stage;
+
+  // Sparkles for stage 2+
+  const sp=document.getElementById('stageSparkles');
+  if(pet.stage>=2&&sp.children.length===0){
+    sp.classList.add('active');
+    for(let i=0;i<12;i++){const d=document.createElement('div');d.className='sparkle-dot';const c=pet.stage>=4?['#c0b0ff','#ffd700','#fff'][Math.floor(Math.random()*3)]:['#ffd700','#ffeaa7','#fff'][Math.floor(Math.random()*3)];d.style.background=c;d.style.width=(2+Math.random()*4)+'px';d.style.height=d.style.width;d.style.left=(10+Math.random()*80)+'%';d.style.top=(5+Math.random()*90)+'%';d.style.animationDelay=Math.random()*3+'s';d.style.animationDuration=(2+Math.random()*3)+'s';d.style.boxShadow=`0 0 ${3+Math.random()*6}px ${c}`;sp.appendChild(d)}
+  }else if(pet.stage<2){sp.classList.remove('active');sp.innerHTML=''}
+
+  const avg=(pet.hunger+pet.happy+pet.energy)/3;
+  const dot=document.getElementById('moodDot');
+  if(avg>=70){dot.style.background='#4ade80';dot.style.boxShadow='0 0 8px rgba(74,222,128,.5)'}else if(avg>=35){dot.style.background='#fbbf24';dot.style.boxShadow='0 0 8px rgba(251,191,36,.5)'}else{dot.style.background='#ef4444';dot.style.boxShadow='0 0 8px rgba(239,68,68,.5)'}
+  const mouth=document.getElementById('mouth');if(avg>=70)mouth.className='mouth happy';else if(avg<25)mouth.className='mouth sad';else mouth.className='';
+  document.getElementById('eventLog').innerHTML=`<span class="feed-dot"></span> Lv.${pet.level} · EXP ${pet.exp}/${pet.expNeed} · 💰${pet.coins}`;
+  const av=document.getElementById('petAvatar');av.textContent=AVATARS[Math.min(pet.stage,4)];av.style.background=AVATAR_GRADS[Math.min(pet.stage,4)];av.style.boxShadow=`0 4px 16px ${pet.stage>=3?'rgba(180,150,255,.5)':pet.stage>=2?'rgba(255,200,100,.4)':'rgba(240,147,251,.3)'}`;
+}
+
+function logEvent(msg){document.getElementById('eventLog').innerHTML=`<span class="feed-dot"></span> ${msg}`}
+
+// ==================== SHARE ====================
+function shareLink(){
+  const url=window.location.href;
+  if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>{showChatBubble('🔗 链接已复制！发给朋友吧~');logEvent('🔗 分享链接已复制到剪贴板')})}else{prompt('复制这个链接发给朋友：',url)}
+}
+
+// ==================== Events ====================
+document.getElementById('pet').addEventListener('click',()=>{pet.happy=Math.min(100,pet.happy+3);pet.exp+=3;if(pet.exp>=pet.expNeed)addExp(0);popMood('🥰');chatWithPet('摸摸头');updateUI()});
+document.getElementById('petStage').addEventListener('mousemove',e=>{const g=document.getElementById('cursorGlow'),r=e.currentTarget.getBoundingClientRect();g.style.left=(e.clientX-r.left)+'px';g.style.top=(e.clientY-r.top)+'px'});
+setInterval(()=>{pet.hunger=Math.max(0,pet.hunger-.8);pet.happy=Math.max(0,pet.happy-.4);pet.energy=Math.max(0,pet.energy-.6);if((pet.hunger+pet.happy+pet.energy)/3<15)logEvent('⚠️ 宠物状态极差！快照顾它！');updateUI()},10000);
+setInterval(()=>{const avg=(pet.hunger+pet.happy+pet.energy)/3;if(Math.random()<0.4-avg*0.003)chatWithPet('')},45000);
+updateUI();logEvent('🐣 你的小团子诞生了！点击它聊天吧~');setTimeout(()=>chatWithPet('打声招呼吧'),600);
+</script>
+</body>
+</html>

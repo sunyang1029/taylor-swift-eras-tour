@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>长征数字地图 — 纪念长征胜利九十周年</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red-primary: #8B0000;
+      --red-light: #c41e3a;
+      --red-glow: #ff4444;
+      --gold: #DAA520;
+      --gold-light: #FFD700;
+      --ink: #1a1a2e;
+      --paper: #f5e6d3;
+    }
+
+    body {
+      font-family: 'Noto Serif SC', 'STSong', serif;
+      background: var(--ink);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ===== 全屏地图容器 ===== */
+    #map-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 深色地图滤镜 */
+    .dark-map .leaflet-tile {
+      filter: brightness(0.65) saturate(0.35) hue-rotate(5deg);
+    }
+    .dark-map .leaflet-container {
+      background: #0d1a26;
+    }
+    .dark-map .leaflet-control-zoom a {
+      background: rgba(26,26,46,0.92) !important;
+      color: var(--gold) !important;
+      border: 1px solid var(--gold) !important;
+      border-radius: 8px !important;
+    }
+    .dark-map .leaflet-control-zoom a:hover {
+      background: var(--gold) !important;
+      color: var(--ink) !important;
+    }
+    .dark-map .leaflet-control-attribution {
+      background: rgba(26,26,46,0.85) !important;
+      color: rgba(255,255,255,0.5) !important;
+      font-size: 10px !important;
+    }
+    .dark-map .leaflet-control-attribution a {
+      color: rgba(255,255,255,0.6) !important;
+    }
+
+    /* ===== 顶部标题栏 ===== */
+    .map-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 18px 36px;
+      background: linear-gradient(180deg, rgba(13,26,38,0.97) 0%, rgba(13,26,38,0.7) 60%, transparent 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .map-header > * { pointer-events: auto; }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      padding: 9px 18px;
+      background: linear-gradient(145deg, rgba(139,0,0,0.85), rgba(196,30,58,0.85));
+      border: 1px solid var(--gold);
+      border-radius: 25px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .nav-btn:hover {
+      background: linear-gradient(145deg, var(--red-light), var(--red-primary));
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(196,30,58,0.4);
+    }
+    .nav-btn.spirit {
+      background: linear-gradient(145deg, rgba(218,165,32,0.8), rgba(184,134,11,0.8));
+    }
+    .nav-btn.spirit:hover {
+      background: linear-gradient(145deg, var(--gold-light), var(--gold));
+    }
+
+    .map-title {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 1.5em;
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(218, 165, 32, 0.5);
+    }
+    .map-subtitle {
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+    }
+
+    .map-legend {
+      display: flex;
+      gap: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      font-size: 12px;
+    }
+    .legend-line {
+      width: 30px;
+      height: 4px;
+      border-radius: 2px;
+    }
+    .legend-army1 { background: #c41e3a; }
+    .legend-army2 { background: #ff8c00; }
+    .legend-army4 { background: #228b22; }
+
+    /* ===== 使用提示 ===== */
+    .usage-hint {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13,26,38,0.92);
+      border: 1px solid var(--gold);
+      border-radius: 30px;
+      padding: 10px 22px;
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      z-index: 1000;
+      display: flex;
+      gap: 18px;
+      pointer-events: none;
+    }
+    .hint-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hint-key {
+      background: var(--gold);
+      color: var(--ink);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* ===== 节点预览浮层 ===== */
+    .node-preview {
+      position: fixed;
+      background: rgba(13, 26, 38, 0.95);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #fff;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      z-index: 2000;
+      min-width: 200px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .node-preview.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .preview-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: var(--gold);
+    }
+    .preview-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+    .preview-hint {
+      font-size: 11px;
+      color: var(--red-light);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ===== 国风弹窗 ===== */
+    .ukiyo-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .ukiyo-modal.active {
+      display: flex;
+      opacity: 1;
+    }
+    .ukiyo-card {
+      position: relative;
+      width: 90%;
+      max-width: 900px;
+      max-height: 85vh;
+      overflow-y: auto;
+      perspective: 1000px;
+    }
+    .ukiyo-frame {
+      position: relative;
+      background: linear-gradient(145deg, #2a1810, #1a0f0a);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow:
+        0 0 0 3px var(--gold),
+        0 0 0 6px #8B4513,
+        0 0 30px rgba(218, 165, 32, 0.3),
+        inset 0 0 60px rgba(0,0,0,0.5);
+      transform: rotateX(5deg) rotateY(-3deg);
+      transition: transform 0.5s ease;
+    }
+    .ukiyo-modal.active .ukiyo-frame {
+      transform: rotateX(0deg) rotateY(0deg) scale(1);
+      animation: cardAppear 0.6s ease-out;
+    }
+    @keyframes cardAppear {
+      0% { transform: rotateX(20deg) rotateY(-10deg) scale(0.8); opacity: 0; }
+      100% { transform: rotateX(0deg) rotateY(0deg) scale(1); opacity: 1; }
+    }
+    .ukiyo-content {
+      position: relative;
+      background: linear-gradient(180deg, var(--paper) 0%, #d4c4a8 100%);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .ukiyo-header {
+      position: relative;
+      height: 280px;
+      overflow: hidden;
+    }
+    .ukiyo-artwork {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.7) saturate(1.2);
+      transition: background-image 0.3s;
+    }
+    .oil-paint-texture {
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+        repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
+      pointer-events: none;
+    }
+    .ukiyo-gradient {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(to top, var(--paper) 0%, transparent 100%);
+    }
+    .ukiyo-title-area {
+      position: absolute;
+      bottom: 20px;
+      left: 30px;
+      right: 30px;
+      z-index: 5;
+    }
+    .ukiyo-date {
+      display: inline-block;
+      background: var(--red-primary);
+      color: #fff;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .ukiyo-title {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 2.2em;
+      color: #2a1810;
+      text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+    }
+    .ukiyo-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #5a4a3a;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+    .ukiyo-body {
+      padding: 30px 35px 40px;
+    }
+    .ukiyo-story {
+      font-size: 1.1em;
+      line-height: 2;
+      color: #3a2a1a;
+    }
+    .ukiyo-story p {
+      margin-bottom: 18px;
+      text-indent: 2em;
+    }
+    .ukiyo-story .highlight {
+      color: var(--red-primary);
+      font-weight: 600;
+    }
+    .ukiyo-insight {
+      margin-top: 25px;
+      padding: 20px 25px;
+      background: linear-gradient(135deg, rgba(139,0,0,0.08), rgba(218,165,32,0.08));
+      border-left: 4px solid var(--gold);
+      border-radius: 0 10px 10px 0;
+    }
+    .insight-title {
+      font-weight: 700;
+      color: var(--red-primary);
+      margin-bottom: 8px;
+    }
+    .insight-text {
+      font-style: italic;
+      color: #5a4a3a;
+      line-height: 1.8;
+    }
+    .ukiyo-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 45px;
+      height: 45px;
+      border: none;
+      background: linear-gradient(145deg, #8B4513, #5a2d0a);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      transition: all 0.3s ease;
+    }
+    .ukiyo-close:hover {
+      transform: rotate(90deg) scale(1.1);
+      background: linear-gradient(145deg, var(--red-light), var(--red-primary));
+    }
+
+    /* ===== 长征故事 / 精神模态框 ===== */
+    .story-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+      z-index: 4000;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+    .story-modal.active { display: flex; }
+
+    .story-container {
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .story-header {
+      text-align: center;
+      margin-bottom: 50px;
+      position: relative;
+    }
+    .story-header::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      z-index: 0;
+    }
+    .story-header h1 {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 3em;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(218, 165, 32, 0.5);
+      background: #0d1a26;
+      display: inline-block;
+      padding: 0 40px;
+      position: relative;
+      z-index: 1;
+    }
+    .story-header .subtitle {
+      color: rgba(255,255,255,0.7);
+      font-size: 1.1em;
+      margin-top: 15px;
+    }
+    .story-section {
+      background: linear-gradient(145deg, rgba(42,24,16,0.95), rgba(26,15,10,0.95));
+      border: 2px solid var(--gold);
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .section-title {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 1.8em;
+      color: var(--gold);
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(218,165,32,0.3);
+    }
+    .story-card {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+      padding: 25px;
+      background: rgba(245,230,211,0.05);
+      border-radius: 15px;
+      border: 1px solid rgba(218,165,32,0.2);
+      transition: all 0.3s ease;
+    }
+    .story-card:hover {
+      transform: translateX(10px);
+      border-color: var(--gold);
+      box-shadow: 0 5px 25px rgba(218,165,32,0.2);
+    }
+    .story-image {
+      width: 200px;
+      height: 150px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid var(--gold);
+    }
+    .story-content h3 {
+      color: var(--gold-light);
+      font-size: 1.3em;
+      margin-bottom: 12px;
+    }
+    .story-content p {
+      color: rgba(255,255,255,0.85);
+      line-height: 1.9;
+      font-size: 1em;
+    }
+
+    /* 长征精神 */
+    .spirit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+    }
+    .spirit-card {
+      background: linear-gradient(180deg, rgba(139,0,0,0.3), rgba(26,15,10,0.8));
+      border: 2px solid transparent;
+      border-radius: 15px;
+      padding: 30px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .spirit-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(218,165,32,0.3);
+    }
+    .spirit-icon { font-size: 3em; margin-bottom: 15px; }
+    .spirit-card h3 { color: var(--gold); font-size: 1.3em; margin-bottom: 15px; }
+    .spirit-card p { color: rgba(255,255,255,0.8); line-height: 1.8; font-size: 0.95em; }
+
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin: 40px 0;
+      flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; }
+    .stat-number {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 3.5em;
+      color: var(--red-light);
+      text-shadow: 0 0 20px rgba(196,30,58,0.5);
+    }
+    .stat-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 1em;
+      margin-top: 5px;
+    }
+
+    .story-close {
+      position: fixed;
+      top: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      border: 2px solid var(--gold);
+      background: rgba(26,26,46,0.95);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+      transition: all 0.3s ease;
+    }
+    .story-close:hover {
+      background: var(--gold);
+      transform: rotate(90deg);
+    }
+    .story-close:hover svg path { stroke: var(--ink); }
+
+    /* ===== 脉搏动画 ===== */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ===== Leaflet 自定义弹窗样式 ===== */
+    .leaflet-popup-content-wrapper {
+      background: rgba(13,26,38,0.95) !important;
+      border: 1px solid var(--gold) !important;
+      border-radius: 10px !important;
+      color: #fff !important;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip {
+      background: rgba(13,26,38,0.95) !important;
+    }
+    .leaflet-popup-content {
+      margin: 10px 14px !important;
+      font-family: 'Noto Serif SC', serif !important;
+    }
+
+    /* 路线流光动画 */
+    @keyframes dashFlow {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 768px) {
+      .map-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 16px;
+      }
+      .header-right { justify-content: center; }
+      .map-legend { flex-wrap: wrap; justify-content: center; }
+      .usage-hint { flex-direction: column; gap: 8px; padding: 10px 16px; font-size: 11px; }
+      .ukiyo-title { font-size: 1.6em; }
+      .story-card { grid-template-columns: 1fr; }
+      .story-image { width: 100%; height: 200px; }
+      .spirit-grid { grid-template-columns: 1fr; }
+      .stats-row { gap: 30px; }
+      .stat-number { font-size: 2.5em; }
+      .story-header h1 { font-size: 2em; padding: 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== 地图容器 ====== -->
+  <div id="map-container" class="dark-map"></div>
+
+  <!-- ====== 顶部标题栏 ====== -->
+  <div class="map-header">
+    <div class="header-left">
+      <div class="map-title">🗺️ 长征数字地图</div>
+      <div class="map-subtitle">纪念中国工农红军长征胜利九十周年 (1934–1936)</div>
+    </div>
+    <div class="header-right">
+      <button class="nav-btn" id="btnStory">📜 长征故事</button>
+      <button class="nav-btn spirit" id="btnSpirit">⭐ 长征精神</button>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-line legend-army1"></div><span>红一方面军</span></div>
+        <div class="legend-item"><div class="legend-line legend-army2"></div><span>红二方面军</span></div>
+        <div class="legend-item"><div class="legend-line legend-army4"></div><span>红四方面军</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 操作提示 ====== -->
+  <div class="usage-hint">
+    <div class="hint-item"><span class="hint-key">滚轮</span><span>缩放地图</span></div>
+    <div class="hint-item"><span class="hint-key">拖拽</span><span>移动地图</span></div>
+    <div class="hint-item"><span class="hint-key">点击标记</span><span>查看节点详情</span></div>
+  </div>
+
+  <!-- ====== 节点预览浮层 ====== -->
+  <div class="node-preview" id="nodePreview">
+    <div class="preview-title"></div>
+    <div class="preview-date"></div>
+    <div class="preview-hint"><span>📖 点击查看详情</span></div>
+  </div>
+
+  <!-- ====== 国风事件弹窗 ====== -->
+  <div class="ukiyo-modal" id="ukiyoModal">
+    <div class="ukiyo-card">
+      <div class="ukiyo-frame">
+        <button class="ukiyo-close" id="btnCloseModal">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><path d="M18 6L6 18M6 6l12 12" stroke="#fff" stroke-width="3"/></svg>
+        </button>
+        <div class="ukiyo-content">
+          <div class="ukiyo-header">
+            <div class="ukiyo-artwork" id="modalArtwork"></div>
+            <div class="oil-paint-texture"></div>
+            <div class="ukiyo-gradient"></div>
+            <div class="ukiyo-title-area">
+              <div class="ukiyo-date" id="modalDate"></div>
+              <h2 class="ukiyo-title" id="modalTitle"></h2>
+              <div class="ukiyo-location">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="#8B0000"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <span id="modalLocation"></span>
+              </div>
+            </div>
+          </div>
+          <div class="ukiyo-body">
+            <div class="ukiyo-story" id="modalStory"></div>
+            <div class="ukiyo-insight">
+              <div class="insight-title">💡 历史启示</div>
+              <div class="insight-text" id="modalInsight"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 长征故事模态框 ====== -->
+  <div class="story-modal" id="storyModal">
+    <button class="story-close" id="btnCloseStory">
+      <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M18 6L6 18M6 6l12 12" stroke="#DAA520" stroke-width="3"/></svg>
+    </button>
+    <div class="story-container">
+      <div class="story-header">
+        <h1>📜 长征故事</h1>
+        <p class="subtitle">回望峥嵘岁月，传承红色基因</p>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-number">2年</div><div class="stat-label">历时</div></div>
+        <div class="stat-item"><div class="stat-number">600+</div><div class="stat-label">战斗次数</div></div>
+        <div class="stat-item"><div class="stat-number">25000</div><div class="stat-label">行程（里）</div></div>
+        <div class="stat-item"><div class="stat-number">14省</div><div class="stat-label">跨越省份</div></div>
+      </div>
+      <div class="story-section">
+        <h2 class="section-title">📖 感人故事</h2>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1516466723877-e4ec1d736c8a?w=400&q=80" alt="半条被子">
+          <div class="story-content">
+            <h3>一、半条被子</h3>
+            <p>1934年11月，红军长征途经湖南汝城县沙洲村。三名女红军借宿徐解秀老人家中，临走时把自己仅有的一床被子剪下一半留给老人。老人说："什么是共产党？共产党就是自己只有一条被子，也要剪下半条给老百姓的人。"</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1565967511849-76a60a516170?w=400&q=80" alt="彝海结盟">
+          <div class="story-content">
+            <h3>二、彝海结盟</h3>
+            <p>1935年5月，红军总参谋长刘伯承与彝族首领小叶丹在彝海边歃血为盟，结为兄弟。红军顺利通过彝区，为强渡大渡河、飞夺泸定桥赢得了宝贵时间。</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1476362555312-ab9e108a0b7e?w=400&q=80" alt="七根火柴">
+          <div class="story-content">
+            <h3>三、七根火柴</h3>
+            <p>长征途中，一位生命垂危的红军战士将党证和七根火柴交给战友，请他转交党组织。战友含泪追上部队，将火柴和党证完整交公，而那位无名战士却永远留在了草地上。</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&q=80" alt="金色鱼钩">
+          <div class="story-content">
+            <h3>四、金色鱼钩</h3>
+            <p>红军过草地时，一位老班长用缝衣针弯成鱼钩钓鱼煮汤给三位生病的小战士喝，自己却舍不得喝一口，最后饿死在草地上。这个"金钩"闪耀着无私奉献的崇高精神。</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1580130732478-4E4d5a51ebd7?w=400&q=80" alt="陈树湘">
+          <div class="story-content">
+            <h3>五、陈树湘断肠明志</h3>
+            <p>1934年12月，红三十四师师长陈树湘在湘江战役中负伤被俘。途中陈树湘趁敌不备，从伤口处掏出肠子用力绞断，壮烈牺牲，年仅29岁，书写了视死如归的革命英雄主义。</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <img class="story-image" src="https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=400&q=80" alt="丰碑">
+          <div class="story-content">
+            <h3>六、丰碑（军需处长）</h3>
+            <p>红军翻越雪山时，一位军需处长把棉衣让给战士们，自己穿着单薄的军装，最终冻死在雪山上。他仍然保持着向前迈步的姿势，用生命铸就了一座永不磨灭的精神丰碑。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 长征精神模态框 ====== -->
+  <div class="story-modal" id="spiritModal">
+    <button class="story-close" id="btnCloseSpirit">
+      <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M18 6L6 18M6 6l12 12" stroke="#DAA520" stroke-width="3"/></svg>
+    </button>
+    <div class="story-container">
+      <div class="story-header">
+        <h1>⭐ 长征精神</h1>
+        <p class="subtitle">把全国人民和中华民族的根本利益看得高于一切</p>
+      </div>
+      <div class="story-section">
+        <h2 class="section-title">🔥 伟大长征精神</h2>
+        <div class="spirit-grid">
+          <div class="spirit-card"><div class="spirit-icon">🎯</div><h3>坚定信念<br>革命理想高于天</h3><p>把党和人民利益放在第一位，为了民族的解放和人民的幸福不惜牺牲一切。</p></div>
+          <div class="spirit-card"><div class="spirit-icon">⚔️</div><h3>不怕牺牲<br>一不怕苦二不怕死</h3><p>面对敌人的围追堵截和自然环境的严酷考验，红军将士毫无惧色，以血肉之躯筑起革命的长城。</p></div>
+          <div class="spirit-card"><div class="spirit-icon">🧭</div><h3>独立自主<br>实事求是闯新路</h3><p>遵义会议后，中国共产党独立自主地解决中国革命问题，开辟了中国革命的新道路。</p></div>
+          <div class="spirit-card"><div class="spirit-icon">🤝</div><h3>顾全大局<br>团结一致向北进</h3><p>各路红军互相配合、密切协同，体现了高度的革命全局观念和共产主义团结精神。</p></div>
+          <div class="spirit-card"><div class="spirit-icon">💪</div><h3>紧密团结<br>军民鱼水情谊深</h3><p>红军与人民群众同甘共苦，建立了深厚的鱼水情谊，赢得了人民群众的真心拥护和支持。</p></div>
+          <div class="spirit-card"><div class="spirit-icon">🌟</div><h3>勇往直前<br>革命到底志不移</h3><p>无论遇到多大困难，红军都保持着革命必胜的信念，一直向北、向前，直到胜利的彼岸。</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // ==========================================
+    // 1. 初始化真实中国地图
+    // ==========================================
+    var map = L.map('map-container', {
+      center: [31.5, 105.0],
+      zoom: 6,
+      zoomControl: true,
+      attributionControl: true,
+      minZoom: 4,
+      maxZoom: 12
+    });
+
+    // 高德地图瓦片（中国境内访问快、地理细节精准）+ 深色滤镜
+    L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+      attribution: '&copy; 高德地图',
+      subdomains: '1234',
+      maxZoom: 12
+    }).addTo(map);
+
+    // ==========================================
+    // 2. 节点数据（真实经纬度）
+    // ==========================================
+    var nodeData = {
+      // 红一方面军节点
+      'ruijin':    { lat: 25.88, lng: 116.03, date: '1934年10月', title: '中央红军长征出发', location: '江西瑞金', army: 1, type: 'major',
+        story: '<p>1934年10月，中央红军（红一方面军）从江西瑞金、于都等地出发，开始了举世闻名的战略转移——<span class="highlight">长征</span>。</p><p>8.6万余名红军将士怀着对革命的坚定信念，踏上了这条充满艰险的征途。</p>',
+        insight: '长征的出发，是中国革命从失败走向胜利的历史转折点。',
+        img: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=900&q=80' },
+      'yudu':      { lat: 25.95, lng: 115.41, date: '1934年10月', title: '于都送别', location: '江西于都', army: 1, type: 'minor',
+        story: '<p>于都是长征的起点，老区人民为红军提供了大量支援。乡亲们用门板搭浮桥，帮助红军渡过于都河。</p>',
+        insight: '人民群众的支持是长征胜利的根本保障。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+      'xiangjiang': { lat: 25.93, lng: 111.07, date: '1934年11-12月', title: '湘江战役', location: '广西全州', army: 1, type: 'major',
+        story: '<p><span class="highlight">湘江战役</span>是长征途中最惨烈的一战。红军在湘江之畔与敌军展开殊死搏斗。</p><p>战斗持续了五天五夜，江水被鲜血染红。红军损失惨重，从8.6万人锐减至3万余人。</p>',
+        insight: '湘江战役的惨烈代价，让红军深刻认识到左倾教条主义的危害。',
+        img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&q=80' },
+      'zunyi':     { lat: 27.72, lng: 106.93, date: '1935年1月', title: '遵义会议', location: '贵州遵义', army: 1, type: 'major',
+        story: '<p>1935年1月，中共中央在贵州遵义召开了著名的<span class="highlight">遵义会议</span>。</p><p>会议结束了左倾教条主义在中央的统治，确立了毛泽东在党中央和红军的领导地位，在最危急的关头挽救了党、挽救了红军、挽救了中国革命。</p>',
+        insight: '遵义会议是党的历史上一个生死攸关的转折点。',
+        img: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=900&q=80' },
+      'chishui':   { lat: 28.59, lng: 105.69, date: '1935年1-4月', title: '四渡赤水', location: '贵州·四川交界', army: 1, type: 'major',
+        story: '<p><span class="highlight">四渡赤水</span>是毛泽东军事指挥艺术的杰作。红军在赤水河两岸声东击西，巧妙穿插于数十万敌军之间。</p><p>被美国作家哈里森称为"长征中最光彩神奇的篇章"。</p>',
+        insight: '四渡赤水展现了灵活机动战略的精髓，是运动战的典范。',
+        img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80' },
+      'jinsha':    { lat: 26.30, lng: 102.00, date: '1935年5月', title: '巧渡金沙江', location: '云南皎平渡', army: 1, type: 'major',
+        story: '<p>中央红军在云南<span class="highlight">皎平渡</span>实现了巧渡金沙江的壮举。红军不费一枪一弹缴获了敌人的渡船。</p><p>经过九天九夜的奋力摆渡，3万余名红军将士全部渡过金沙江，甩开了数十万追兵。</p>',
+        insight: '巧渡金沙江体现了红军指挥员的机智勇敢。',
+        img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80' },
+      'daduhe':    { lat: 29.23, lng: 102.28, date: '1935年5月', title: '强渡大渡河', location: '四川安顺场', army: 1, type: 'major',
+        story: '<p><span class="highlight">强渡大渡河</span>是长征途中又一场惊心动魄的战斗。17勇士乘坐小船，在敌人的枪林弹雨中强行渡河。</p><p>太平天国名将石达开就是在这里全军覆没的。红军打破了"石达开第二"的预言。</p>',
+        insight: '强渡大渡河展现了红军不怕苦、不怕死的革命精神。',
+        img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&q=80' },
+      'luding':    { lat: 29.91, lng: 102.23, date: '1935年5月', title: '飞夺泸定桥', location: '四川泸定', army: 1, type: 'major',
+        story: '<p><span class="highlight">飞夺泸定桥</span>是长征途中最艰险的战斗之一。22位勇士冒着生命危险，在敌人拆去桥板的铁索上边前进边铺设木板。</p><p>经过两个小时的激战，红军夺占了泸定桥。</p>',
+        insight: '22位勇士的英雄壮举，展现了革命军人的钢铁意志。',
+        img: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=900&q=80' },
+      'jiajin':    { lat: 30.80, lng: 102.70, date: '1935年6月', title: '翻越夹金山', location: '四川夹金山', army: 1, type: 'major',
+        story: '<p><span class="highlight">夹金山</span>是长征途中翻越的第一座大雪山，海拔4000多米，空气稀薄，气候恶劣。</p><p>红军将士穿着单薄的军装，顶着刺骨的寒风，踏着没膝的积雪艰难前行。许多同志因饥寒交迫而牺牲。</p>',
+        insight: '翻越夹金山证明了红军是任何艰难险阻都压不垮的英雄部队。',
+        img: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=900&q=80' },
+      'maogong':   { lat: 31.00, lng: 102.30, date: '1935年6月', title: '懋功会师', location: '四川懋功', army: 1, type: 'meeting',
+        story: '<p>中央红军与<span class="highlight">红四方面军</span>在四川懋功胜利会师。两支兄弟部队历经千山万水，终于在这川西高原上重逢。</p><p>指战员们激动地拥抱在一起，欢呼声响彻山谷。</p>',
+        insight: '懋功会师展现了红军各部队之间的深厚革命情谊。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+      'ruoergai':  { lat: 33.58, lng: 102.96, date: '1935年8-9月', title: '穿越草地', location: '四川若尔盖', army: 1, type: 'major',
+        story: '<p><span class="highlight">穿越草地</span>是长征途中最为艰苦的历程。红军走进了纵横数百里的茫茫沼泽。</p><p>草地上天气变幻莫测，野菜、草根、皮带、马鞍都成了充饥之物。但红军没有被困难征服。</p>',
+        insight: '穿越草地铸就了自力更生、艰苦奋斗的长征精神丰碑。',
+        img: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=900&q=80' },
+      'lazikou':   { lat: 34.10, lng: 103.90, date: '1935年9月', title: '突破腊子口', location: '甘肃迭部', army: 1, type: 'major',
+        story: '<p><span class="highlight">腊子口</span>是岷山山脉的一道天险，两侧是悬崖峭壁，中间是一条宽仅30米的峡谷。</p><p>红军采取正面佯攻、侧翼迂回的战术，一举突破了天险腊子口。</p>',
+        insight: '突破腊子口打开了北上抗日的通道。',
+        img: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=900&q=80' },
+      'hadapu':    { lat: 34.20, lng: 104.20, date: '1935年9月', title: '哈达铺整编', location: '甘肃宕昌', army: 1, type: 'minor',
+        story: '<p>红军到达<span class="highlight">哈达铺</span>后，获得了宝贵的休整机会。毛泽东在这里提出了"到陕北去"的战略方针，为长征的最后胜利奠定了基础。</p>',
+        insight: '哈达铺整编标志着长征从战略转移转变为北上抗日的新阶段。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+      'wuqi':      { lat: 36.93, lng: 108.17, date: '1935年10月', title: '吴起镇会师', location: '陕西吴起', army: 1, type: 'major',
+        story: '<p>1935年10月，中央红军到达陕北吴起镇，与当地的红十五军团胜利会师。</p><p>这标志着中央红军长征的胜利结束，也为中国革命找到了新的落脚点和出发点。</p>',
+        insight: '吴起镇会师为中国革命开辟了新天地。',
+        img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&q=80' },
+
+      // 红二方面军节点
+      'sangzhi':   { lat: 29.40, lng: 110.20, date: '1935年11月', title: '红二方面军出发', location: '湖南桑植', army: 2, type: 'major',
+        story: '<p>1935年11月，红二、红六军团从湖南桑植出发，开始长征。</p><p>他们在湘鄂川黔根据地坚持斗争后，踏上了北上征程。</p>',
+        insight: '红二方面军的长征丰富了红军战略转移的宝贵经验。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+      'shigu':     { lat: 26.80, lng: 99.50, date: '1936年4月', title: '石鼓渡金沙江', location: '云南石鼓', army: 2, type: 'major',
+        story: '<p>红二方面军在云南<span class="highlight">石鼓</span>渡过金沙江，创造了红军长征中又一段传奇。</p><p>在当地群众帮助下，红军成功渡过了这条汹涌澎湃的大江。</p>',
+        insight: '石鼓渡江展现了红二方面军的英勇智慧。',
+        img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80' },
+      'ganzi':     { lat: 31.62, lng: 100.00, date: '1936年6月', title: '甘孜会师', location: '四川甘孜', army: 2, type: 'meeting',
+        story: '<p>红二方面军与<span class="highlight">红四方面军</span>在甘孜胜利会师。会师后，两军共同北上。</p><p>这次会师为三大主力红军的最终会合创造了条件。</p>',
+        insight: '甘孜会师是红军团结一致、共同北上的重要里程碑。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+
+      // 红四方面军节点
+      'chuanbei':  { lat: 32.00, lng: 107.00, date: '1935年3月', title: '强渡嘉陵江', location: '川陕根据地', army: 4, type: 'major',
+        story: '<p>1935年3月，红四方面军从<span class="highlight">川陕根据地</span>出发，强渡嘉陵江，开始了长征。</p><p>红四方面军是长征中兵力最雄厚的一支主力红军。</p>',
+        insight: '红四方面军的长征是三大主力红军战略转移的重要组成部分。',
+        img: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=900&q=80' },
+
+      // 最终会师
+      'huining':   { lat: 35.70, lng: 105.05, date: '1936年10月', title: '三大主力会宁会师', location: '甘肃会宁', army: 0, type: 'meeting',
+        story: '<p><span class="highlight">红一、红二、红四方面军</span>在甘肃会宁胜利会师，宣告了长征的胜利结束。</p><p>会宁城里万人空巷，父老乡亲们端着茶水、端着红枣，欢迎历经千辛万苦的红军将士。长征是人类历史上的伟大壮举。</p>',
+        insight: '会宁会师标志着中国革命大本营的建立，为抗日战争和解放战争的胜利奠定了基础。',
+        img: 'https://images.unsplash.com/photo-1548407260-da850faa41e3?w=900&q=80' },
+      'jiangtaibao': { lat: 36.00, lng: 105.80, date: '1936年10月', title: '将台堡会师', location: '宁夏将台堡', army: 2, type: 'meeting',
+        story: '<p>红二方面军与红一方面军在宁夏<span class="highlight">将台堡</span>胜利会师，这是长征胜利的最后一幕。</p><p>三大主力红军的胜利会师，宣告了国民党反动派围追堵截的彻底破产。</p>',
+        insight: '将台堡会师是长征胜利的最终标志。',
+        img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80' },
+    };
+
+    // ==========================================
+    // 3. 三支主力红军路线（真实地理路径）
+    // ==========================================
+
+    // 红一方面军路线
+    var route1 = [
+      [25.88, 116.03],  // 瑞金
+      [25.95, 115.41],  // 于都
+      [25.50, 114.30],  // 赣南
+      [25.80, 112.50],  // 湘南
+      [25.93, 111.07],  // 全州·湘江
+      [26.20, 110.00],  // 通道
+      [26.23, 109.13],  // 黎平
+      [27.20, 107.50],  // 黔东南
+      [27.72, 106.93],  // 遵义
+      [28.30, 106.00],  // 赤水河
+      [27.50, 105.50],  // 二渡赤水
+      [28.00, 106.00],  // 三渡赤水
+      [27.80, 105.80],  // 四渡赤水
+      [26.90, 104.30],  // 黔西南
+      [26.30, 102.00],  // 皎平渡·金沙江
+      [28.00, 102.00],  // 凉山彝区
+      [29.23, 102.28],  // 安顺场·大渡河
+      [29.91, 102.23],  // 泸定
+      [30.80, 102.70],  // 夹金山
+      [31.00, 102.30],  // 懋功
+      [32.00, 102.50],  // 卓克基
+      [32.60, 103.00],  // 毛儿盖
+      [33.58, 102.96],  // 若尔盖草地
+      [34.10, 103.90],  // 腊子口
+      [34.20, 104.20],  // 哈达铺
+      [35.30, 105.50],  // 通渭
+      [36.93, 108.17],  // 吴起镇
+    ];
+
+    // 红二方面军路线
+    var route2 = [
+      [29.40, 110.20],  // 桑植
+      [27.50, 109.50],  // 黔东
+      [27.00, 106.00],  // 黔西
+      [25.80, 104.60],  // 盘县
+      [26.00, 102.00],  // 滇中
+      [26.80, 99.50],   // 石鼓·金沙江
+      [28.50, 99.50],   // 滇西北
+      [30.00, 99.50],   // 康南
+      [31.62, 100.00],  // 甘孜
+      [33.00, 101.50],  // 川西北
+      [34.20, 104.20],  // 哈达铺
+      [35.00, 105.00],  // 陇中
+      [36.00, 105.80],  // 将台堡
+    ];
+
+    // 红四方面军路线
+    var route4 = [
+      [32.00, 107.00],  // 川陕根据地·嘉陵江
+      [31.80, 105.80],  // 剑门关
+      [31.50, 104.00],  // 川西北
+      [31.00, 102.30],  // 懋功
+      [30.50, 101.50],  // 康北
+      [31.00, 100.50],  // 炉霍
+      [31.62, 100.00],  // 甘孜
+      [32.50, 101.00],  // 川西北
+      [33.58, 102.96],  // 若尔盖
+      [34.50, 104.00],  // 岷县
+      [35.70, 105.05],  // 会宁
+    ];
+
+    // ==========================================
+    // 4. 绘制闪烁路线
+    // ==========================================
+    function createGlowPolyline(coords, color, weight, dashArray) {
+      // 发光底层
+      L.polyline(coords, {
+        color: color,
+        weight: weight + 6,
+        opacity: 0.25,
+        smoothFactor: 1,
+        interactive: false
+      }).addTo(map);
+
+      // 主路线
+      return L.polyline(coords, {
+        color: color,
+        weight: weight,
+        opacity: 0.9,
+        smoothFactor: 1,
+        dashArray: dashArray || null,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+
+    createGlowPolyline(route1, '#c41e3a', 5, null);
+    createGlowPolyline(route2, '#ff8c00', 5, '10 6');
+    createGlowPolyline(route4, '#228b22', 5, '6 6');
+
+    // ==========================================
+    // 5. 添加节点标记
+    // ==========================================
+    var currentNodeId = null;
+    var markers = {};
+
+    function getArmyColor(army) {
+      if (army === 1) return '#c41e3a';
+      if (army === 2) return '#ff8c00';
+      if (army === 4) return '#228b22';
+      return '#FFD700'; // 会师点用金色
+    }
+
+    function createMarkerIcon(color, size, isMeeting) {
+      var html;
+      if (isMeeting) {
+        html = '<div style="position:relative;width:'+(size*2)+'px;height:'+(size*2)+'px;">'
+          + '<div style="position:absolute;inset:0;background:'+color+';border-radius:50%;opacity:0.3;animation:pulse 2s infinite;"></div>'
+          + '<div style="position:absolute;top:25%;left:25%;width:50%;height:50%;background:'+color+';border-radius:50%;"></div>'
+          + '<div style="position:absolute;top:38%;left:38%;width:24%;height:24%;background:#fff;border-radius:50%;"></div>'
+          + '</div>';
+        size = size * 2;
+      } else {
+        var pulseHtml = size >= 14 ? 'animation:pulse 2s infinite;' : '';
+        html = '<div style="position:relative;width:'+(size*2)+'px;height:'+(size*2)+'px;">'
+          + '<div style="position:absolute;inset:0;background:'+color+';border-radius:50%;opacity:0.3;'+pulseHtml+'"></div>'
+          + '<div style="position:absolute;top:20%;left:20%;width:60%;height:60%;background:'+color+';border-radius:50%;opacity:0.7;"></div>'
+          + '<div style="position:absolute;top:35%;left:35%;width:30%;height:30%;background:#fff;border-radius:50%;"></div>'
+          + '</div>';
+      }
+      return L.divIcon({
+        className: 'custom-marker',
+        html: html,
+        iconSize: [size * 2, size * 2],
+        iconAnchor: [size, size]
+      });
+    }
+
+    // 创建所有标记
+    Object.keys(nodeData).forEach(function(id) {
+      var d = nodeData[id];
+      var isMeeting = (d.type === 'meeting');
+      var size = (d.type === 'major' || isMeeting) ? 14 : 9;
+      var marker = L.marker([d.lat, d.lng], {
+        icon: createMarkerIcon(getArmyColor(d.army), size, isMeeting),
+        riseOnHover: true
+      }).addTo(map);
+
+      // 悬停弹窗
+      marker.bindTooltip(
+        '<b style="color:'+getArmyColor(d.army)+'">'+d.title+'</b><br>'+d.date+' · '+d.location,
+        { direction: 'top', offset: [0, -size-5], className: '' }
+      );
+
+      // 点击打开详情
+      marker.on('click', function() {
+        currentNodeId = id;
+        openModal(d);
+      });
+
+      markers[id] = marker;
+    });
+
+    // ==========================================
+    // 6. 添加起点 / 终点标记
+    // ==========================================
+    var startIcon = L.divIcon({
+      className: '',
+      html: '<div style="background:rgba(13,26,38,0.9);border:2px solid #FFD700;border-radius:6px;padding:3px 8px;color:#FFD700;font-size:12px;font-weight:bold;white-space:nowrap;">⭐ 长征出发</div>',
+      iconSize: [100, 26],
+      iconAnchor: [50, 38]
+    });
+    L.marker([25.88, 116.03], { icon: startIcon, interactive: false }).addTo(map);
+
+    var endIcon = L.divIcon({
+      className: '',
+      html: '<div style="background:rgba(13,26,38,0.9);border:2px solid #FFD700;border-radius:6px;padding:3px 10px;color:#FFD700;font-size:12px;font-weight:bold;white-space:nowrap;">🏁 胜利会师</div>',
+      iconSize: [100, 26],
+      iconAnchor: [50, 38]
+    });
+    L.marker([35.70, 105.05], { icon: endIcon, interactive: false }).addTo(map);
+
+    // ==========================================
+    // 7. 弹窗逻辑
+    // ==========================================
+    function openModal(data) {
+      document.getElementById('modalDate').textContent = data.date;
+      document.getElementById('modalTitle').textContent = data.title;
+      document.getElementById('modalLocation').textContent = data.location;
+      document.getElementById('modalStory').innerHTML = data.story;
+      document.getElementById('modalInsight').textContent = data.insight;
+
+      var artworkEl = document.getElementById('modalArtwork');
+      var gradient = 'linear-gradient(135deg, #2a1810, #1a0f0a)';
+
+      // 先显示渐变
+      artworkEl.style.backgroundImage = 'none';
+      artworkEl.style.background = gradient;
+
+      // 异步加载图片
+      if (data.img) {
+        var img = new Image();
+        img.onload = function() {
+          artworkEl.style.background = gradient;
+          artworkEl.style.backgroundImage = 'url(' + data.img + ')';
+          artworkEl.style.backgroundSize = 'cover';
+          artworkEl.style.backgroundPosition = 'center';
+          artworkEl.style.backgroundBlendMode = 'overlay';
+        };
+        img.onerror = function() {
+          artworkEl.style.backgroundImage = 'none';
+          artworkEl.style.background = gradient;
+        };
+        img.src = data.img;
+      }
+
+      document.getElementById('ukiyoModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('ukiyoModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('btnCloseModal').addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeModal();
+    });
+
+    document.getElementById('ukiyoModal').addEventListener('click', function(e) {
+      if (e.target.id === 'ukiyoModal') closeModal();
+    });
+
+    // ==========================================
+    // 8. 长征故事 & 精神模态框
+    // ==========================================
+    function openStoryModal() {
+      document.getElementById('storyModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeStoryModal() {
+      document.getElementById('storyModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    function openSpiritModal() {
+      document.getElementById('spiritModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeSpiritModal() {
+      document.getElementById('spiritModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('btnStory').addEventListener('click', function(e) {
+      e.stopPropagation();
+      openStoryModal();
+    });
+    document.getElementById('btnSpirit').addEventListener('click', function(e) {
+      e.stopPropagation();
+      openSpiritModal();
+    });
+    document.getElementById('btnCloseStory').addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeStoryModal();
+    });
+    document.getElementById('btnCloseSpirit').addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeSpiritModal();
+    });
+    document.getElementById('storyModal').addEventListener('click', function(e) {
+      if (e.target.id === 'storyModal') closeStoryModal();
+    });
+    document.getElementById('spiritModal').addEventListener('click', function(e) {
+      if (e.target.id === 'spiritModal') closeSpiritModal();
+    });
+
+    // ESC 关闭
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+        closeStoryModal();
+        closeSpiritModal();
+      }
+    });
+
+    // ==========================================
+    // 9. 初始化完成
+    // ==========================================
+    console.log('✅ 长征数字地图已就绪 — 基于真实中国地理底图');
+  </script>
+</body>
+</html>

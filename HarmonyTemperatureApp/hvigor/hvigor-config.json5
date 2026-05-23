@@ -1,0 +1,9 @@
+{
+  "modelVersion": "6.1.0",
+  "nodeModules": {
+    "entry": "./entry"
+  },
+  "dependencies": {
+    "compileSdkVersion": "5.0.0(12)"
+  }
+}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长征·丰碑 — 实践作业报告</title>
+<style>
+  :root { --gold: #8b6914; --text: #1a1a1a; --light: #fafaf7; --border: #999; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SimSun', 'STSong', 'FangSong', 'Noto Serif SC', serif;
+    background: #e8e0d5; color: var(--text); line-height: 1.9; font-size: 14px;
+  }
+  .page {
+    max-width: 794px; margin: 20px auto; padding: 64px 72px;
+    background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+    min-height: 1123px;
+  }
+  @media print {
+    body { background: #fff; } .page { box-shadow: none; margin: 0; padding: 50px 60px; page-break-after: always; }
+    .no-print { display: none !important; }
+  }
+
+  .print-btn {
+    position: fixed; top: 20px; right: 20px; z-index: 999;
+    padding: 10px 24px; background: #1a1a1a; color: var(--gold);
+    border: 1px solid var(--gold); cursor: pointer; font-size: 14px; letter-spacing: 2px;
+  }
+  .print-btn:hover { background: #333; }
+
+  /* ── Title Banner ── */
+  .doc-title {
+    text-align: center; font-size: 18px; font-weight: bold; letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .doc-subtitle {
+    text-align: center; font-size: 15px; margin-bottom: 24px; color: #555;
+  }
+
+  /* ── Tables ── */
+  table.grid {
+    width: 100%; border-collapse: collapse; margin: 12px 0;
+    border: 1px solid #333;
+  }
+  table.grid th, table.grid td {
+    border: 1px solid #333; padding: 8px 10px; vertical-align: top;
+  }
+  table.grid th {
+    background: #f0ede5; font-weight: bold; text-align: center;
+  }
+  table.grid td.label { text-align: center; font-weight: bold; width: 100px; background: #fafaf7; }
+
+  /* ── Info Rows (label-value) ── */
+  .info-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .info-table td { padding: 6px 10px; border: 1px solid #333; vertical-align: top; }
+  .info-table td.label { text-align: center; font-weight: bold; width: 110px; background: #fafaf7; }
+
+  /* ── Sections ── */
+  h2 { font-size: 16px; margin: 28px 0 14px; text-align: center; letter-spacing: 3px; }
+  h3 { font-size: 14px; margin: 20px 0 10px; font-weight: bold; }
+  h4 { font-size: 14px; margin: 14px 0 8px; }
+  p { text-indent: 2em; margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 8px 2em; }
+  li { margin-bottom: 5px; }
+
+  /* ── Signature ── */
+  .sig-line { display: inline-block; width: 160px; border-bottom: 1px solid #333; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">打印 PDF</button>
+
+<!-- ════════════════════════════════════════
+     PAGE 1 — 考核评分表封面
+     ════════════════════════════════════════ -->
+<div class="page">
+  <div class="doc-title">《中国近现代史纲要》实践作业考核评分表</div>
+
+  <table style="width:100%; border-collapse:collapse; margin:16px 0;">
+    <tr>
+      <td style="padding:6px 10px;">考查成绩：</td>
+      <td style="padding:6px 10px; width:35%;"></td>
+      <td style="padding:6px 10px; text-align:right;">评阅教师签名：<span class="sig-line"></span></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="padding:6px 10px; text-align:right;">年&emsp;&emsp;月&emsp;&emsp;日</td>
+    </tr>
+  </table>
+
+  <table class="info-table">
+    <tr><td class="label">班&emsp;&emsp;级</td><td></td></tr>
+    <tr><td class="label">组&emsp;&emsp;名</td><td>（小组成员：&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;）</td></tr>
+    <tr><td class="label">选&emsp;&emsp;题</td><td>纪念长征胜利九十周年 —— 微电影式互动动画网站《长征·丰碑》</td></tr>
+    <tr><td class="label">作品简介</td><td>本作品是一个微电影式互动动画网站，以红军长征六大关键历史节点为主线（瑞金出发→湘江血战→遵义会议→飞夺泸定桥→翻雪山过草地→胜利会师），采用AI生成电影级视频为背景，配合Canvas实时粒子特效（雨、火星、光点、雪花、金色粒子），以全屏滚动叙事的方式，带领观看者沉浸式重温长征伟大历程。作品融合影视叙事+游戏交互+数据可视化，支持自动播放、键盘/触屏导航，浏览器打开即用，无需安装。</td></tr>
+  </table>
+
+  <table style="width:100%; border-collapse:collapse; margin:8px 0;">
+    <tr><td class="label" style="border:1px solid #333; padding:6px; text-align:center; width:110px;">小组成员</td><td style="border:1px solid #333; padding:6px;"></td></tr>
+  </table>
+
+  <!-- Scoring Table -->
+  <table class="grid" style="margin-top:20px;">
+    <tr>
+      <th style="width:80px;">评分项目</th>
+      <th>评分标准及要求</th>
+      <th style="width:60px;">分值</th>
+      <th style="width:60px;">得分</th>
+    </tr>
+    <tr>
+      <td class="label">规范<br>学术规范</td>
+      <td>作品内容严谨科学无争议</td>
+      <td style="text-align:center;">10</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">文档资料</td>
+      <td>完整提交作品，符合命名及格式要求</td>
+      <td style="text-align:center;">10</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">思想性</td>
+      <td>弘扬长征精神；传承和弘扬中华优秀传统文化</td>
+      <td style="text-align:center;">10</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">创新性</td>
+      <td>紧紧围绕主题，内容充实具体，作品设计构思、方案实施、艺术表现等有一定的创新和创意</td>
+      <td style="text-align:center;">30</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">丰富性</td>
+      <td>内容丰富程度</td>
+      <td style="text-align:center;">20</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">表达<br>风格</td>
+      <td>作品诠释主题角度和艺术手法合理，艺术表现形式具备美感</td>
+      <td style="text-align:center;">10</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="label">技术及<br>完整度</td>
+      <td>允许和鼓励运用AI等技术</td>
+      <td style="text-align:center;">10</td>
+      <td></td>
+    </tr>
+  </table>
+
+  <p style="font-size:13px; margin-top:8px;">说明：1.作品必须坚持正确的政治立场，否则以零分处理。</p>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE 2 — 作品设计要求：前期准备
+     ════════════════════════════════════════ -->
+<div class="page">
+  <div class="doc-title">作品设计要求</div>
+
+  <h3>一、前期准备和资料收集</h3>
+
+  <h4>1. 历史资料</h4>
+  <p>围绕长征主题，小组成员分工收集了以下历史资料：</p>
+  <ul>
+    <li><strong>权威文献：</strong>查阅中共中央党史研究室编著的《中国共产党历史》第一卷（1921—1949），重点研读第五次反"围剿"至三大主力会师的相关章节，梳理长征各重要事件的时间线、战役经过和历史意义。</li>
+    <li><strong>回忆录与口述史料：</strong>阅读《红军长征回忆录》《星火燎原》等亲历者记述，了解湘江战役、飞夺泸定桥、过雪山草地等关键节点的具体细节与感人故事。</li>
+    <li><strong>核心历史事件梳理：</strong>确定六个核心场景——第五次反围剿失利与长征开始、湘江战役、遵义会议、飞夺泸定桥、翻雪山过草地、三大主力会宁会师。逐条核实时间、地点、参战部队、伤亡数据、历史意义。</li>
+  </ul>
+
+  <h4>2. 地理信息</h4>
+  <ul>
+    <li>通过地理信息数据库和在线地图工具，获取长征途经地区的地形地貌数据：江西瑞金（丘陵山区）、湘江流域（河谷平原）、贵州遵义（云贵高原）、大渡河泸定段（高山峡谷）、川西北夹金山（海拔4000m+雪山）、松潘草地（高原沼泽）、甘肃会宁（黄土高原）。</li>
+    <li>了解各地区的自然气候条件——湘江11月的湿冷、大渡河5月的湍急汛期、雪山6月的暴风雪、草地8月的泥泞沼泽，为视频生成提示词中的环境描写提供真实依据。</li>
+  </ul>
+
+  <h4>3. 图片和视频</h4>
+  <ul>
+    <li>收集长征时期历史照片（如红军行军照、遵义会议会址、泸定桥历史影像等）作为AI视频生成的风格参考。</li>
+    <li>观看相关纪录片（《长征》《长征组歌》等），分析画面构图、色调、运镜方式，提炼出"暗色调+慢镜头+史诗光影"的视觉风格定位。</li>
+    <li>使用AI视频生成工具（可灵Kling）为六大场景生成电影级背景视频，每段8-10秒，1920×1080分辨率，循环播放。生成提示词严格基于历史事实描述环境与氛围。</li>
+  </ul>
+
+  <h4>4. 音频资料</h4>
+  <ul>
+    <li>收集长征相关歌曲（《十送红军》《长征组歌》等）及诗词朗诵录音（毛泽东《七律·长征》），用于增强作品的听觉沉浸感（作品已预留音乐接口）。</li>
+    <li>在场景文字中直接引用毛泽东长征诗词原文（《七律·长征》中的四句，分置于四个场景），以文学力量深化情感共鸣。</li>
+  </ul>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE 3 — 内容设计
+     ════════════════════════════════════════ -->
+<div class="page">
+  <h3>二、内容设计</h3>
+
+  <p>本作品以<strong>历史事件类</strong>为主线，融合<strong>互动体验类</strong>与<strong>地理环境类</strong>元素，构建一个"一镜到底"的微电影式长征叙事体验。具体设计如下：</p>
+
+  <h4>1. 历史事件类（核心主线）</h4>
+  <p>以长征六个关键地点上的历史事件为对象，每个场景包含事件的<strong>时间、背景、经过和影响</strong>，结合AI视频画面与Canvas粒子特效，以图文并茂、声像结合的方式呈现：</p>
+
+  <table class="grid">
+    <tr><th style="width:70px;">场景</th><th style="width:90px;">时间·地点</th><th>历史事件及意义</th><th style="width:100px;">视觉设计</th></tr>
+    <tr>
+      <td style="text-align:center;">第一章<br>伟大的远征</td>
+      <td>1934.10<br>江西瑞金</td>
+      <td><strong>第五次反"围剿"失利与长征开始。</strong>由于"左"倾错误领导，中央红军被迫实行战略转移，八万六千将士告别苏区，踏上征途。这是中国革命的重大转折，也是人类历史上最伟大的行军之一。</td>
+      <td>暗夜群山、蜿蜒火把、雨丝粒子</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">第二章<br>湘江血战</td>
+      <td>1934.11<br>湘江之畔</td>
+      <td><strong>中央红军突破国民党第四道封锁线。</strong>五天五夜浴血奋战，以损失逾五万人的惨重代价撕开封锁线。此役是长征中最惨烈的战役，血染湘江，也促使红军深刻反思"左"倾错误，为遵义会议的召开埋下伏笔。</td>
+      <td>暗红基调、硝烟弥漫、火星粒子</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">第三章<br>遵义会议</td>
+      <td>1935.1<br>贵州遵义</td>
+      <td><strong>中国共产党历史上生死攸关的转折点。</strong>会议纠正了"左"倾军事路线错误，事实上确立了毛泽东在党中央和红军的领导地位，在极端危急的历史关头挽救了党、挽救了红军、挽救了中国革命。</td>
+      <td>暖金灯光、煤油灯摇曳、光点粒子</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">第四章<br>飞夺泸定桥</td>
+      <td>1935.5<br>四川泸定</td>
+      <td><strong>长征中最具传奇色彩的军事行动。</strong>红四团一昼夜急行军240里，二十二名突击队员攀着十三根铁索匍匐前进，在枪林弹雨中夺取泸定桥，粉碎了蒋介石让红军成为"石达开第二"的企图。</td>
+      <td>铁索横桥、激流咆哮、火花粒子</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">第五章<br>雪山·草地</td>
+      <td>1935.6-8<br>川西北</td>
+      <td><strong>长征中对人类生存极限的最大挑战。</strong>翻越海拔4000米以上的夹金山等多座大雪山，穿越杳无人烟的松潘沼泽草地。饥寒交迫中无数战士长眠于此，是红军钢铁意志最集中的体现。</td>
+      <td>冷色调、白雪苍茫、雪花粒子</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">终章<br>胜利会师</td>
+      <td>1936.10<br>甘肃会宁</td>
+      <td><strong>长征胜利结束。</strong>红一、红二、红四方面军三大主力在会宁胜利会师。历时两年、跨越14省、行程两万五千里，保存了中国革命的骨干力量，铸就了伟大的长征精神。</td>
+      <td>金色夕阳、红旗挥舞、金色粒子</td>
+    </tr>
+  </table>
+
+  <h4>2. 互动体验类</h4>
+  <p>本作品开发了以下交互功能，增强用户的参与度和沉浸感：</p>
+  <ul>
+    <li><strong>自动播放模式（虚拟漫游）：</strong>作品内置8秒/场景的自动播放引擎，用户无需任何操作即可自动沿长征时间线"虚拟行走"，完整观看六段场景。播放到终章后自动循环回第一章，适合展览和课堂演示场景。</li>
+    <li><strong>手动导航：</strong>用户可通过鼠标滚动、键盘方向键（↑↓←→）、触屏滑动、右侧导航圆点共四种方式自由切换场景，满足主动探索需求。</li>
+    <li><strong>Canvas粒子交互：</strong>每场景配备独立粒子特效系统（雨/火星/光点/火花/雪花/金色粒子），60fps实时渲染，粒子风格随场景情绪自动切换，增强视觉沉浸感。</li>
+    <li><strong>电影黑边动画：</strong>场景切换时，上下黑边从8%高度展开至0，模拟电影开场效果，强化"微电影"的仪式感。</li>
+  </ul>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE 4 — 内容设计（续）+ 技术说明
+     ════════════════════════════════════════ -->
+<div class="page">
+  <h4>3. 地理环境类</h4>
+  <p>每场景背景视频的AI生成提示词中，均包含对当地真实地形地貌的严格描述，并通过粒子特效强化环境氛围：</p>
+  <ul>
+    <li><strong>江西瑞金（出发）：</strong>南方丘陵山区，秋季夜雾缭绕，火把在蜿蜒山路上形成"火龙"。</li>
+    <li><strong>湘江（血战）：</strong>湘江河谷，冬季湿冷，江水湍急，两岸开阔成为血战战场。</li>
+    <li><strong>贵州遵义（会议）：</strong>云贵高原小城，冬季阴冷潮湿，二层小楼的煤油灯成为希望的象征。</li>
+    <li><strong>大渡河泸定段（铁索桥）：</strong>高山峡谷地貌，河面狭窄但水流极为湍急，两岸峭壁陡立，铁索桥横跨天险。激流咆哮与浪花飞溅是此处最鲜明的环境特征。</li>
+    <li><strong>川西北夹金山—松潘草地（跋涉）：</strong>前半段为海拔4000m+的雪山（暴风雪、低氧、严寒），后半段为高原沼泽草地（一望无际的泥泞、缺粮），对比城市生活体会"饥寒交迫"四字的真实分量。</li>
+    <li><strong>甘肃会宁（会师）：</strong>黄土高原，秋季夕阳，金色光芒洒满沟壑纵横的大地。三支红军在夕阳下汇聚，漫天金色尘土。</li>
+  </ul>
+
+  <h4>4. 人物故事类</h4>
+  <p>在场景叙述中融入以下人物与群体故事，增强情感共鸣：</p>
+  <ul>
+    <li><strong>毛泽东：</strong>遵义会议确立领导地位（第三章），《七律·长征》诗句贯穿全篇（第一、四、五章引用），会师后发表"长征是宣言书、宣传队、播种机"经典论断（终章）。</li>
+    <li><strong>二十二勇士（飞夺泸定桥）：</strong>第四章突出突击队员攀铁索匍匐前进的英勇事迹，辅以"大渡桥横铁索寒"诗句，体现普通战士的英雄气概。</li>
+    <li><strong>红军群体：</strong>第一章"八万六千将士"出发、第二章"五万将士血染湘江"、第五章"多少人一坐下就再也没有起来"，以集体群像叙事展现长征的悲壮与伟大。</li>
+    <li><strong>长征故事精神内核：</strong>作品中虽未逐一列举具体故事，但通过整体叙事传递了"半条被子"的军民鱼水情、"丰碑"中军需处长的自我牺牲精神、"陈树湘断肠明志"的绝对忠诚等长征故事的精神内核。</li>
+  </ul>
+
+  <h4>5. 技术运用说明（对应"允许和鼓励运用AI等技术"）</h4>
+  <ul>
+    <li><strong>AI视频生成：</strong>使用可灵（Kling）AI视频生成工具，为六个场景生成电影级写实背景视频，每段均以详细中文提示词（包含时间、地点、环境、氛围、运镜方式）驱动，确保历史准确性。</li>
+    <li><strong>Canvas粒子引擎：</strong>纯JavaScript实现六套独立粒子系统，60fps实时渲染，粒子类型根据场景自动切换。</li>
+    <li><strong>响应式设计：</strong>CSS Scroll Snap + Flexbox + 媒体查询，支持桌面端和移动端自适应。</li>
+    <li><strong>零依赖部署：</strong>单一HTML文件+视频文件夹，无需npm/webpack/后端服务器，浏览器直接打开或部署至任意静态托管服务。</li>
+  </ul>
+
+  <p style="text-align:right; margin-top:40px; color:#888;">中国近现代史教研室</p>
+  <p style="text-align:right; color:#888;">2026年3月</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "modelVersion": "6.1.0",
+  "name": "temperature-monitor",
+  "version": "1.0.0",
+  "description": "ESP32 DS18B20 温度监控 — 滑动平均滤波算法",
+  "main": "",
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@ohos/hvigor-ohos-plugin": "5.0.0"
+  },
+  "dependencies": {}
+}

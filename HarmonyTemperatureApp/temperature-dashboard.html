@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌡️ 温度监控 | ESP32 + DS18B20</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-card: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.06);
+  --accent: #0A59F7;
+  --accent-glow: rgba(10,89,247,0.4);
+  --success: #34C759;
+  --warning: #FF9500;
+  --danger: #FF3B30;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+/* 背景动态光晕 */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(10,89,247,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(0,200,200,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(100,50,200,0.04) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+
+/* ── 顶部导航 ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #00d4ff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+.title-sub { font-size: 12px; color: var(--text-secondary); }
+.status-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  background: rgba(52,199,89,0.12); color: var(--success);
+  border: 1px solid rgba(52,199,89,0.2);
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--success);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,199,89,0.6); }
+  50%      { opacity: 0.6; box-shadow: 0 0 0 8px rgba(52,199,89,0); }
+}
+
+/* ── 主温度显示区 ── */
+.hero {
+  display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px;
+  margin-bottom: 20px;
+}
+@media (max-width: 768px) { .hero { grid-template-columns: 1fr; } }
+
+.temp-main {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.temp-label { font-size: 13px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.temp-value {
+  font-size: 72px; font-weight: 700; letter-spacing: -2px;
+  background: linear-gradient(180deg, #ffffff 0%, #a0c4ff 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.temp-unit { font-size: 28px; font-weight: 300; color: var(--text-secondary); margin-top: 4px; }
+.temp-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; padding: 6px 16px;
+  border-radius: 20px; font-size: 13px; font-weight: 500;
+}
+.temp-status.normal { background: rgba(52,199,89,0.12); color: var(--success); border: 1px solid rgba(52,199,89,0.2); }
+.temp-status.hot { background: rgba(255,149,0,0.12); color: var(--warning); border: 1px solid rgba(255,149,0,0.2); }
+.temp-status.cold { background: rgba(10,89,247,0.12); color: var(--accent); border: 1px solid rgba(10,89,247,0.2); }
+
+/* ── 图表卡片 ── */
+.chart-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.chart-title { font-size: 14px; font-weight: 600; }
+.chart-legend { display: flex; gap: 16px; font-size: 11px; color: var(--text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend-dot.raw { background: rgba(255,149,0,0.7); }
+.legend-dot.filtered { background: #0A59F7; box-shadow: 0 0 6px var(--accent-glow); }
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap canvas { width: 100% !important; }
+
+/* ── 统计卡片 ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+.stat-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: transform 0.2s, border-color 0.3s;
+}
+.stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+.stat-icon { font-size: 20px; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ── 滑动窗口可视化 ── */
+.bottom-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+@media (max-width: 768px) { .bottom-row { grid-template-columns: 1fr; } }
+
+.window-card, .log-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.card-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+.window-slots { display: flex; gap: 10px; justify-content: center; }
+.window-slot {
+  width: 64px; height: 80px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.window-slot .slot-val { font-size: 18px; font-weight: 700; }
+.window-slot .slot-unit { font-size: 10px; color: var(--text-secondary); }
+.window-slot .slot-idx { font-size: 9px; color: var(--text-secondary); position: absolute; top: 6px; }
+.window-slot.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+  background: rgba(10,89,247,0.08);
+}
+.window-slot.active .slot-val { color: #60a5fa; }
+.window-arrow { display: flex; align-items: center; color: var(--text-secondary); font-size: 20px; }
+.avg-display { text-align: center; margin-top: 16px; }
+.avg-value { font-size: 32px; font-weight: 700; color: #60a5fa; }
+.avg-label { font-size: 11px; color: var(--text-secondary); }
+
+/* ── 事件日志 ── */
+.log-list { max-height: 300px; overflow-y: auto; }
+.log-entry {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  font-size: 12px; font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+.log-entry .time { color: var(--text-secondary); flex-shrink: 0; }
+.log-entry .arrow { color: #60a5fa; margin: 0 4px; }
+.log-entry .raw-val { color: #ff9500; }
+.log-entry .filtered-val { color: #60a5fa; font-weight: 600; }
+.log-entry.anomaly { background: rgba(255,59,48,0.06); border-left: 2px solid var(--danger); }
+.log-entry.anomaly .anomaly-tag { color: var(--danger); font-weight: 600; }
+
+/* ── 控制按钮 ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+.btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+.btn.accent { border-color: var(--accent); color: #60a5fa; }
+.btn.accent:hover { background: rgba(10,89,247,0.1); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 顶部 -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🌡️</div>
+      <div>
+        <div class="title">DS18B20 温度监控</div>
+        <div class="title-sub">ESP32 &middot; GPIO 5 &middot; 滑动平均滤波</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="status-badge"><span class="status-dot"></span> 运行中</div>
+      <button class="btn" onclick="toggleSimulation()" id="simBtn">⏸️ 暂停</button>
+      <button class="btn accent" onclick="resetData()">🔄 重置</button>
+    </div>
+  </header>
+
+  <!-- 主温度显示 + 图表 -->
+  <div class="hero">
+    <div class="temp-main" id="tempMain">
+      <div class="temp-label">算法滤波温度</div>
+      <div class="temp-value" id="tempDisplay">--.-</div>
+      <div class="temp-unit">℃</div>
+      <div class="temp-status normal" id="tempStatus">✅ 正常范围</div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">📈 实时温度曲线</span>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot raw"></span> 原始采集</span>
+          <span class="legend-item"><span class="legend-dot filtered"></span> 滤波输出</span>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value" id="statAvg">--</div>
+      <div class="stat-label">滑动平均值 (窗口=5)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-value" id="statRaw">--</div>
+      <div class="stat-label">最近原始采集值</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🛡️</div>
+      <div class="stat-value" id="statAnomalies" style="color:var(--danger)">0</div>
+      <div class="stat-label">异常值拦截次数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📡</div>
+      <div class="stat-value" id="statCount">0</div>
+      <div class="stat-label">总采集次数</div>
+    </div>
+  </div>
+
+  <!-- 底部：滑动窗口 + 事件日志 -->
+  <div class="bottom-row">
+    <div class="window-card">
+      <div class="card-title">🪟 滑动窗口 (窗口大小 = 5)</div>
+      <div class="window-slots" id="windowSlots">
+        <!-- JS 动态填充 -->
+      </div>
+      <div class="avg-display">
+        <div class="avg-value" id="avgDisplay">--.- ℃</div>
+        <div class="avg-label">当前滑动平均值</div>
+      </div>
+    </div>
+
+    <div class="log-card">
+      <div class="card-title">📋 数据日志</div>
+      <div class="log-list" id="logList">
+        <div class="log-entry" style="color:var(--text-secondary);">
+          <span>等待采集数据...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// 核心算法：滑动平均滤波 (完全复刻 Arduino 逻辑)
+// ═══════════════════════════════════════════
+
+const FILTER_WINDOW = 5;           // 滑动窗口大小
+const ANOMALY_FLAGS = [-127.00, 85.00]; // 异常值特征（DS18B20 典型错误码）
+
+class SlidingWindowFilter {
+  constructor(windowSize = FILTER_WINDOW) {
+    this.numReadings = windowSize;
+    this.readings = new Array(windowSize).fill(0);
+    this.readIndex = 0;
+    this.total = 0;
+  }
+
+  /**
+   * 滤波一个温度读数
+   * @param {number} rawValue - 原始采集值
+   * @returns {{filtered: number|null, anomaly: boolean}}
+   *   返回滤波后的值；若为异常值则返回 null 且 anomaly=true
+   */
+  filter(rawValue) {
+    // ── 核心 1：异常值拦截 ──
+    if (rawValue === -127.00 || rawValue === 85.00) {
+      return { filtered: null, anomaly: true };
+    }
+
+    // ── 核心 2：滑动平均滤波 ──
+    // 完全复刻 Arduino 逻辑：
+    //   total = total - readings[readIndex];
+    //   readings[readIndex] = currentTemp;
+    //   total = total + readings[readIndex];
+    //   readIndex = readIndex + 1;
+    //   if (readIndex >= numReadings) readIndex = 0;
+    //   average = total / numReadings;
+    this.total -= this.readings[this.readIndex];
+    this.readings[this.readIndex] = rawValue;
+    this.total += this.readings[this.readIndex];
+    this.readIndex++;
+
+    if (this.readIndex >= this.numReadings) {
+      this.readIndex = 0;
+    }
+
+    const average = this.total / this.numReadings;
+    return { filtered: average, anomaly: false };
+  }
+
+  /** 获取当前滑动窗口数据（用于可视化） */
+  getWindow() {
+    return {
+      readings: [...this.readings],
+      readIndex: this.readIndex,
+      average: this.numReadings > 0 ? this.total / this.numReadings : 0
+    };
+  }
+
+  reset() {
+    this.readings = new Array(this.numReadings).fill(0);
+    this.readIndex = 0;
+    this.total = 0;
+  }
+}
+
+// ═══════════════════════════════════════════
+// 温度数据模拟器（模拟 DS18B20 真实输出）
+// ═══════════════════════════════════════════
+
+class TemperatureSimulator {
+  constructor(baseTemp = 25.0) {
+    this.baseTemp = baseTemp;
+    this.trend = 0;
+  }
+
+  /** 生成一个模拟的传感器原始读数 */
+  read() {
+    // 缓慢漂移
+    this.trend += (Math.random() - 0.5) * 0.03;
+    this.trend = Math.max(-2, Math.min(2, this.trend));
+
+    // 随机噪声 (±1.5°C)
+    const noise = (Math.random() - 0.5) * 3.0;
+
+    // 1.5% 概率生成异常值
+    if (Math.random() < 0.015) {
+      return Math.random() < 0.5 ? -127.00 : 85.00;
+    }
+
+    return +(this.baseTemp + this.trend + noise).toFixed(2);
+  }
+}
+
+// ═══════════════════════════════════════════
+// Chart.js 图表
+// ═══════════════════════════════════════════
+
+const MAX_DATA_POINTS = 60;
+const chartData = {
+  labels: [],
+  raw: [],
+  filtered: []
+};
+
+const ctx = document.getElementById('tempChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: '原始采集',
+        data: chartData.raw,
+        borderColor: 'rgba(255,149,0,0.5)',
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        tension: 0.3
+      },
+      {
+        label: '滤波输出',
+        data: chartData.filtered,
+        borderColor: '#0A59F7',
+        backgroundColor: 'rgba(10,89,247,0.08)',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(10,14,26,0.9)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleColor: '#e8eaed',
+        bodyColor: '#9aa0a6',
+        padding: 12,
+        cornerRadius: 8
+      }
+    },
+    scales: {
+      x: {
+        display: true,
+        ticks: { color: 'rgba(255,255,255,0.25)', font: { size: 10 }, maxTicksLimit: 8 },
+        grid: { color: 'rgba(255,255,255,0.03)' }
+      },
+      y: {
+        display: true,
+        ticks: { color: 'rgba(255,255,255,0.25)', font: { size: 10 }, callback: v => v + '℃' },
+        grid: { color: 'rgba(255,255,255,0.03)' }
+      }
+    },
+    interaction: { intersect: false, mode: 'index' }
+  }
+});
+
+// ═══════════════════════════════════════════
+// 应用主逻辑
+// ═══════════════════════════════════════════
+
+const filter = new SlidingWindowFilter(FILTER_WINDOW);
+const simulator = new TemperatureSimulator(25.0);
+
+let isRunning = true;
+let sampleCount = 0;
+let anomalyCount = 0;
+let intervalId = null;
+
+// DOM 引用
+const tempDisplay = document.getElementById('tempDisplay');
+const tempStatus = document.getElementById('tempStatus');
+const statAvg = document.getElementById('statAvg');
+const statRaw = document.getElementById('statRaw');
+const statAnomalies = document.getElementById('statAnomalies');
+const statCount = document.getElementById('statCount');
+const avgDisplay = document.getElementById('avgDisplay');
+const windowSlots = document.getElementById('windowSlots');
+const logList = document.getElementById('logList');
+const simBtn = document.getElementById('simBtn');
+
+function now() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 8);
+}
+
+function addLog(timeText, rawVal, filteredVal, anomaly) {
+  const entry = document.createElement('div');
+  entry.className = 'log-entry' + (anomaly ? ' anomaly' : '');
+
+  if (anomaly) {
+    entry.innerHTML = `<span class="time">${timeText}</span> ⚠️ 检测到异常值 <span class="anomaly-tag">${rawVal}℃</span> — 已自动拦截`;
+  } else {
+    entry.innerHTML = `<span class="time">${timeText}</span> 原始:<span class="raw-val">${rawVal.toFixed(2)}℃</span> <span class="arrow">→</span> 滤波:<span class="filtered-val">${filteredVal.toFixed(2)}℃</span>`;
+  }
+
+  logList.prepend(entry);
+
+  // 最多保留 100 条日志
+  while (logList.children.length > 100) {
+    logList.removeChild(logList.lastChild);
+  }
+}
+
+function updateTempDisplay(temp) {
+  if (temp === null) return;
+  tempDisplay.textContent = temp.toFixed(1);
+
+  // 颜色状态
+  tempStatus.className = 'temp-status';
+  if (temp > 30) {
+    tempStatus.className = 'temp-status hot';
+    tempStatus.textContent = '🔥 温度偏高';
+  } else if (temp < 15) {
+    tempStatus.className = 'temp-status cold';
+    tempStatus.textContent = '❄️ 温度偏低';
+  } else {
+    tempStatus.className = 'temp-status normal';
+    tempStatus.textContent = '✅ 正常范围';
+  }
+}
+
+function updateWindowUI() {
+  const win = filter.getWindow();
+  windowSlots.innerHTML = '';
+
+  for (let i = 0; i < FILTER_WINDOW; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'window-slot' + (i === win.readIndex ? ' active' : '');
+    slot.innerHTML = `
+      <span class="slot-idx">[${i}]</span>
+      <span class="slot-val">${win.readings[i].toFixed(1)}</span>
+      <span class="slot-unit">℃</span>
+    `;
+    windowSlots.appendChild(slot);
+  }
+
+  avgDisplay.textContent = win.average.toFixed(2) + ' ℃';
+}
+
+function updateChart(timeLabel, raw, filtered) {
+  chartData.labels.push(timeLabel);
+  chartData.raw.push(raw);
+  chartData.filtered.push(filtered);
+
+  if (chartData.labels.length > MAX_DATA_POINTS) {
+    chartData.labels.shift();
+    chartData.raw.shift();
+    chartData.filtered.shift();
+  }
+
+  chart.update();
+}
+
+function tick() {
+  const timeText = now();
+  const rawValue = simulator.read();
+
+  // 执行滤波
+  const result = filter.filter(rawValue);
+  sampleCount++;
+
+  if (result.anomaly) {
+    anomalyCount++;
+    addLog(timeText, rawValue, null, true);
+  } else {
+    addLog(timeText, rawValue, result.filtered, false);
+  }
+
+  // 更新 UI
+  if (result.filtered !== null) {
+    updateTempDisplay(result.filtered);
+    updateChart(timeText, rawValue, result.filtered);
+    statAvg.textContent = result.filtered.toFixed(2) + ' ℃';
+  }
+  statRaw.textContent = rawValue.toFixed(2) + ' ℃';
+  statAnomalies.textContent = anomalyCount;
+  statCount.textContent = sampleCount;
+  updateWindowUI();
+}
+
+function startSimulation() {
+  if (intervalId) clearInterval(intervalId);
+  intervalId = setInterval(tick, 1000);
+  isRunning = true;
+  simBtn.innerHTML = '⏸️ 暂停';
+}
+
+function stopSimulation() {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  isRunning = false;
+  simBtn.innerHTML = '▶️ 启动';
+}
+
+function toggleSimulation() {
+  isRunning ? stopSimulation() : startSimulation();
+}
+
+function resetData() {
+  filter.reset();
+  sampleCount = 0;
+  anomalyCount = 0;
+  chartData.labels = [];
+  chartData.raw = [];
+  chartData.filtered = [];
+  chart.update();
+  logList.innerHTML = '<div class="log-entry" style="color:var(--text-secondary);"><span>数据已重置</span></div>';
+  tempDisplay.textContent = '--.-';
+  statAvg.textContent = '--';
+  statRaw.textContent = '--';
+  statAnomalies.textContent = '0';
+  statCount.textContent = '0';
+  avgDisplay.textContent = '--.- ℃';
+  updateWindowUI();
+}
+
+// ── 启动 ──
+updateWindowUI();
+startSimulation();
+</script>
+</body>
+</html>

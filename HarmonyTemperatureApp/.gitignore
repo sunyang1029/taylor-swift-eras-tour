@@ -1,0 +1,8 @@
+node_modules/
+oh_modules/
+.cxx/
+.preview/
+build/
+**/.hvigor/
+local.properties
+*.log

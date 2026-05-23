@@ -1,0 +1,9 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "温度监控应用入口模块",
+  "main": "",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
+}

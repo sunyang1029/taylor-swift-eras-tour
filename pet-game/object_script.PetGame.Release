@@ -1,0 +1,14 @@
+release/main.o
+release/pet.o
+release/item.o
+release/job.o
+release/petmanager.o
+release/mainwindow.o
+release/shopdialog.o
+release/jobdialog.o
+release/qrc_resources.o
+release/moc_job.o
+release/moc_petmanager.o
+release/moc_mainwindow.o
+release/moc_shopdialog.o
+release/moc_jobdialog.o
