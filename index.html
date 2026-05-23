@@ -6,7 +6,7 @@
 <title>星空Live情报站 — Taylor Swift & 薛之谦 全球巡演</title>
 <style>
 /* ============================================================
-   CSS Variables & Reset — 深邃赛博配色
+   CSS Variables — 深邃赛博配色
    ============================================================ */
 :root {
   --bg-deep: #020205;
@@ -21,41 +21,18 @@
   --glass: rgba(255,255,255,0.04);
   --text: #e2e8f0;
   --text-dim: #94a3b8;
-  --font-mono: 'JetBrains Mono','Fira Code','Cascadia Code','Courier New',monospace;
-  --font-sans: 'Inter','SF Pro Display','PingFang SC','Microsoft YaHei',sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--bg-deep);overflow:hidden;height:100vh}
 body{
-  font-family:var(--font-sans);color:var(--text);height:100vh;
+  font-family:'Inter','SF Pro Display','PingFang SC','Microsoft YaHei',sans-serif;
+  color:var(--text);height:100vh;
   cursor:none;user-select:none;-webkit-font-smoothing:antialiased;
   overflow:hidden;
 }
 
-/* ── Loading / Error Overlay ────────────────────────────── */
-#status-overlay{
-  position:fixed;inset:0;z-index:10000;display:flex;
-  align-items:center;justify-content:center;
-  background:var(--bg-deep);transition:opacity 0.6s;
-  pointer-events:none;
-}
-#status-overlay.done{opacity:0}
-#status-text{
-  font-family:var(--font-mono);font-size:13px;color:var(--cyan);
-  letter-spacing:0.3em;animation:pulse 1.5s infinite;
-}
-#status-text.error{color:var(--red);animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-
-/* ── Three.js / Static Background ───────────────────────── */
-#particle-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
-#fallback-bg{
-  position:fixed;inset:0;z-index:0;pointer-events:none;display:none;
-  background:radial-gradient(ellipse at 50% 40%,rgba(0,240,255,0.04) 0%,transparent 60%),
-             radial-gradient(ellipse at 30% 60%,rgba(255,45,149,0.03) 0%,transparent 50%),
-             radial-gradient(ellipse at 70% 30%,rgba(124,58,237,0.03) 0%,transparent 50%),
-             var(--bg-deep);
-}
+/* ── Canvas Background ──────────────────────────────────── */
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
 
 /* ── Custom Cursor ──────────────────────────────────────── */
 #cursor{
@@ -73,203 +50,191 @@ body{
 /* ── Nav ────────────────────────────────────────────────── */
 nav{
   display:flex;align-items:center;justify-content:space-between;
-  padding:24px 40px;z-index:10;flex-shrink:0;
+  padding:20px 40px;z-index:10;flex-shrink:0;
 }
 .logo{
-  font-family:var(--font-mono);font-size:13px;letter-spacing:0.3em;
-  color:var(--cyan);text-transform:uppercase;
+  font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
+  font-size:13px;letter-spacing:0.3em;color:var(--cyan);text-transform:uppercase;
   text-shadow:0 0 20px rgba(0,240,255,0.5);
 }
-.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links{display:flex;gap:28px;list-style:none}
 .nav-links a{
-  color:var(--text-dim);text-decoration:none;font-size:12px;
+  color:var(--text-dim);text-decoration:none;font-size:11px;
   letter-spacing:0.15em;text-transform:uppercase;transition:color 0.3s;
-  cursor:none;
+  cursor:none;padding:4px 0;border-bottom:2px solid transparent;
 }
-.nav-links a:hover,.nav-links a.active{color:var(--pink);text-shadow:0 0 12px rgba(255,45,149,0.6)}
+.nav-links a:hover,.nav-links a.active{color:var(--pink);border-bottom-color:var(--pink);text-shadow:0 0 12px rgba(255,45,149,0.6)}
 
 /* ── Hero / Countdown ────────────────────────────────────── */
 #hero{
   display:flex;align-items:center;justify-content:center;gap:80px;
-  padding:10px 40px;min-height:160px;z-index:5;flex-shrink:0;
-  background:linear-gradient(180deg,transparent 0%,rgba(0,240,255,0.02) 50%,transparent 100%);
+  padding:8px 40px;min-height:150px;z-index:5;flex-shrink:0;
+  background:linear-gradient(180deg,transparent 0%,rgba(0,240,255,0.015) 50%,transparent 100%);
 }
 .countdown-block{text-align:center}
-.countdown-label{
-  font-size:10px;letter-spacing:0.4em;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;
-}
-.countdown-digits{display:flex;gap:8px;justify-content:center;align-items:baseline}
+.countdown-label{font-size:10px;letter-spacing:0.4em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px}
+.countdown-digits{display:flex;gap:6px;justify-content:center;align-items:baseline}
 .countdown-digit{
-  font-family:var(--font-mono);font-size:72px;font-weight:700;line-height:1;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  font-size:68px;font-weight:700;line-height:1;
   background:linear-gradient(180deg,#fff 0%,var(--cyan) 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
   background-clip:text;
-  filter:drop-shadow(0 0 24px rgba(0,240,255,0.4));
-  min-width:90px;text-align:center;
+  filter:drop-shadow(0 0 20px rgba(0,240,255,0.4));
+  min-width:82px;text-align:center;
 }
-.countdown-unit{font-size:11px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px}
-.countdown-sep{font-size:48px;color:rgba(255,255,255,0.2);padding-bottom:12px}
-.next-concert-info{text-align:left;min-width:260px}
+.countdown-unit{font-size:10px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px}
+.countdown-sep{font-size:42px;color:rgba(255,255,255,0.15);padding-bottom:10px}
+.next-concert-info{text-align:left;min-width:240px}
 .next-concert-tag{
-  font-size:10px;letter-spacing:0.3em;color:var(--pink);text-transform:uppercase;
-  display:inline-block;padding:4px 12px;border:1px solid rgba(255,45,149,0.3);
-  border-radius:2px;margin-bottom:16px;
+  font-size:9px;letter-spacing:0.3em;color:var(--pink);text-transform:uppercase;
+  display:inline-block;padding:3px 10px;border:1px solid rgba(255,45,149,0.3);
+  border-radius:2px;margin-bottom:12px;
 }
-.next-concert-artist{font-size:28px;font-weight:700;margin-bottom:4px}
-.next-concert-city{font-size:16px;color:var(--text-dim);margin-bottom:8px}
-.next-concert-venue{font-size:13px;color:var(--text-dim);opacity:0.7}
+.next-concert-artist{font-size:26px;font-weight:700;margin-bottom:3px}
+.next-concert-city{font-size:15px;color:var(--text-dim);margin-bottom:6px}
+.next-concert-venue{font-size:12px;color:var(--text-dim);opacity:0.7}
 .price-badge{
-  display:inline-flex;align-items:center;gap:8px;margin-top:12px;
-  padding:6px 16px;border-radius:2px;font-family:var(--font-mono);font-size:14px;
+  display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+  padding:5px 14px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:13px;
 }
 .price-badge.critical{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:var(--red)}
 .price-badge.hot{background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.4);color:var(--orange)}
 .price-badge.warming{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--gold)}
 .price-badge.normal{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:var(--green)}
-.price-badge.sold-out{background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);color:var(--purple);animation:glow 1.5s infinite alternate}
-@keyframes glow{0%{box-shadow:0 0 4px rgba(124,58,237,0.3)}100%{box-shadow:0 0 16px rgba(124,58,237,0.6)}}
+.price-badge.sold-out{background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);color:var(--purple);animation:glowPulse 1.5s infinite alternate}
+@keyframes glowPulse{0%{box-shadow:0 0 4px rgba(124,58,237,0.3)}100%{box-shadow:0 0 16px rgba(124,58,237,0.6)}}
 
-/* ── Carousel Section ────────────────────────────────────── */
+/* ── Carousel ────────────────────────────────────────────── */
 #carousel-section{
   flex:1;display:flex;align-items:center;justify-content:center;
   perspective:1400px;perspective-origin:50% 40%;z-index:5;
   position:relative;min-height:300px;
 }
-#carousel-stage{
-  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-  transform-style:preserve-3d;
-}
-#carousel-ring{
-  position:relative;transform-style:preserve-3d;
-  width:0;height:0;
-}
+#carousel-stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d}
+#carousel-ring{position:relative;transform-style:preserve-3d;width:0;height:0}
 .carousel-hint{
-  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
-  font-size:10px;letter-spacing:0.3em;color:var(--text-dim);
-  display:flex;align-items:center;gap:8px;z-index:10;
+  position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+  font-size:9px;letter-spacing:0.25em;color:var(--text-dim);
+  display:flex;align-items:center;gap:6px;z-index:10;opacity:0.7;
 }
-.carousel-hint .arrows{color:var(--cyan);font-size:14px}
+.carousel-hint .arrows{color:var(--cyan);font-size:12px}
 
-/* ── Card Positioner ────────────────────────────────────── */
-.card-positioner{
-  position:absolute;
-  transform-style:preserve-3d;
-  pointer-events:auto;
-}
+/* ── Card ────────────────────────────────────────────────── */
+.card-positioner{position:absolute;transform-style:preserve-3d;pointer-events:auto}
 
-/* ── 3D Card ────────────────────────────────────────────── */
 .concert-card{
   width:100%;height:100%;
   transform-style:preserve-3d;
-  transition:transform 0.6s cubic-bezier(0.23,1,0.32,1);
+  transition:transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.35s;
   cursor:none;
 }
 .concert-card.flipped{transform:rotateY(180deg)}
+
+.card-positioner:hover .concert-card:not(.flipped){
+  transform:scale(1.06);
+  box-shadow:0 0 35px rgba(0,240,255,0.15);
+}
+
 .card-face{
   position:absolute;inset:0;backface-visibility:hidden;border-radius:8px;
   overflow:hidden;border:1px solid rgba(255,255,255,0.08);
 }
+
 .card-front{
   background:var(--card-bg);backdrop-filter:blur(20px);
-  display:flex;flex-direction:column;padding:22px 20px;
+  display:flex;flex-direction:column;padding:20px 18px;
   box-shadow:0 8px 40px rgba(0,0,0,0.5);
 }
 .card-front::before{
   content:'';position:absolute;inset:0;border-radius:8px;
-  background:radial-gradient(ellipse at 50% 0%,rgba(0,240,255,0.08) 0%,transparent 60%);
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,240,255,0.06) 0%,transparent 60%);
   pointer-events:none;
 }
 .card-front.taylor{border-top:3px solid var(--pink)}
 .card-front.xue{border-top:3px solid var(--cyan)}
+
 .card-artist-avatar{
-  width:44px;height:44px;border-radius:50%;margin-bottom:14px;
+  width:40px;height:40px;border-radius:50%;margin-bottom:12px;
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:700;color:#fff;flex-shrink:0;
+  font-size:16px;font-weight:700;color:#fff;flex-shrink:0;
 }
-.card-artist-avatar.taylor{background:linear-gradient(135deg,var(--pink),#ec4899)}
-.card-artist-avatar.xue{background:linear-gradient(135deg,var(--cyan),#3b82f6)}
-.card-artist-name{font-size:15px;font-weight:700;margin-bottom:1px}
-.card-tour-name{font-size:9px;color:var(--text-dim);margin-bottom:16px;letter-spacing:0.05em}
-.card-city{font-size:20px;font-weight:700;margin-bottom:1px}
-.card-country{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
-.card-date{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:3px}
-.card-venue{font-size:10px;color:var(--text-dim);opacity:0.7;margin-bottom:12px}
-.card-sellout-bar{width:100%;height:2px;background:rgba(255,255,255,0.1);margin-top:auto;margin-bottom:10px;border-radius:1px;overflow:hidden}
+.card-artist-avatar.taylor{background:linear-gradient(135deg,var(--pink),#ec4899);box-shadow:0 0 16px rgba(255,45,149,0.3)}
+.card-artist-avatar.xue{background:linear-gradient(135deg,var(--cyan),#3b82f6);box-shadow:0 0 16px rgba(0,240,255,0.3)}
+
+.card-artist-name{font-size:14px;font-weight:700;margin-bottom:1px}
+.card-tour-name{font-size:8px;color:var(--text-dim);margin-bottom:14px;letter-spacing:0.04em}
+.card-city{font-size:19px;font-weight:700;margin-bottom:1px}
+.card-country{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.card-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:2px}
+.card-venue{font-size:9px;color:var(--text-dim);opacity:0.7;margin-bottom:10px}
+.card-sellout-bar{width:100%;height:2px;background:rgba(255,255,255,0.08);margin-top:auto;margin-bottom:8px;border-radius:1px;overflow:hidden}
 .card-sellout-fill{height:100%;border-radius:1px;transition:width 0.6s}
-.card-tier-strip{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)}
-.card-tier-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase}
-.card-tier-price{font-family:var(--font-mono);font-size:16px;font-weight:700}
+.card-tier-strip{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)}
+.card-tier-label{font-size:8px;letter-spacing:0.2em;text-transform:uppercase}
+.card-tier-price{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
 
 /* Card Back */
 .card-back{
-  background:rgba(8,8,22,0.95);backdrop-filter:blur(20px);
-  transform:rotateY(180deg);padding:24px 20px;
-  display:flex;flex-direction:column;gap:10px;
+  background:rgba(8,8,22,0.96);backdrop-filter:blur(20px);
+  transform:rotateY(180deg);padding:22px 18px;
+  display:flex;flex-direction:column;gap:8px;
   box-shadow:0 8px 40px rgba(0,0,0,0.5);
 }
-.card-back h3{font-size:12px;letter-spacing:0.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:2px}
+.card-back h3{font-size:11px;letter-spacing:0.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:2px}
 .card-back .info-row{display:flex;justify-content:space-between;align-items:center}
-.card-back .info-label{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em}
-.card-back .info-value{font-family:var(--font-mono);font-size:12px;text-align:right}
-.card-back .countdown-mini{font-family:var(--font-mono);font-size:16px;color:var(--cyan);text-align:center;padding:10px;background:rgba(0,240,255,0.05);border-radius:4px}
+.card-back .info-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em}
+.card-back .info-value{font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right}
+.card-back .countdown-mini{
+  font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--cyan);
+  text-align:center;padding:8px;background:rgba(0,240,255,0.04);border-radius:4px;
+  margin-top:4px;
+}
 
-/* Card hover effects - pure CSS fallback */
+/* Glitch hover */
 .concert-card:hover .card-city{animation:glitch1 0.3s ease-in-out}
 .concert-card:hover .card-artist-name{animation:glitch2 0.25s ease-in-out}
 @keyframes glitch1{0%,100%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}}
 @keyframes glitch2{0%,100%{transform:translate(0)}20%{transform:translate(2px,-1px)}40%{transform:translate(-1px,2px)}60%{transform:translate(1px,1px)}80%{transform:translate(-2px,-1px)}}
 
-/* Card hover scale via CSS when JS GSAP unavailable */
-.card-positioner:hover .concert-card:not(.flipped){transform:scale(1.06);transition:transform 0.3s ease-out}
-.card-positioner .concert-card{transition:transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s}
-.card-positioner:hover .concert-card{box-shadow:0 0 30px rgba(0,240,255,0.15)}
-
 /* ── Dashboard ──────────────────────────────────────────── */
 #dashboard{
-  padding:16px 40px 24px;z-index:5;flex-shrink:0;
-  display:flex;gap:20px;justify-content:center;flex-wrap:wrap;
+  padding:14px 40px 22px;z-index:5;flex-shrink:0;
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;
 }
 .stat-card{
   background:var(--glass);backdrop-filter:blur(12px);
   border:1px solid rgba(255,255,255,0.06);border-radius:6px;
-  padding:16px 24px;min-width:130px;text-align:center;
+  padding:14px 22px;min-width:120px;text-align:center;
   transition:border-color 0.3s,transform 0.3s;
 }
 .stat-card:hover{border-color:rgba(0,240,255,0.3);transform:translateY(-2px)}
-.stat-value{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--cyan)}
-.stat-label{font-size:9px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px}
+.stat-value{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--cyan)}
+.stat-label{font-size:8px;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px}
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media(max-width:1024px){
-  .countdown-digit{font-size:42px;min-width:50px}
-  #hero{flex-direction:column;gap:20px;text-align:center;padding:10px 16px}
+  .countdown-digit{font-size:40px;min-width:50px}
+  #hero{flex-direction:column;gap:16px;text-align:center;padding:8px 16px}
   .next-concert-info{text-align:center}
-  .concert-card{font-size:90%}
-  #dashboard{padding:10px 16px;gap:10px}
-  .stat-card{padding:10px 16px;min-width:90px}
-  .stat-value{font-size:20px}
-  nav{padding:16px 20px}
+  #dashboard{padding:8px 16px;gap:8px}
+  .stat-card{padding:8px 14px;min-width:80px}
+  .stat-value{font-size:18px}
+  nav{padding:12px 16px}
+  .nav-links{gap:16px}
 }
 </style>
 </head>
 <body>
 
-<!-- Status overlay (visible until data loads) -->
-<div id="status-overlay"><div id="status-text">◆ INITIALIZING SYSTEM ◆</div></div>
-
-<!-- Background layers -->
-<canvas id="particle-canvas"></canvas>
-<div id="fallback-bg"></div>
-
-<!-- Custom cursor -->
+<canvas id="star-canvas"></canvas>
 <div id="cursor"></div>
 
-<!-- App -->
 <div id="app">
   <nav>
     <div class="logo">◆ 星空Live情报站</div>
     <ul class="nav-links">
-      <li><a href="#" data-artist="all" class="nav-filter active">全部艺人</a></li>
+      <li><a href="#" data-artist="all" class="nav-filter active">全部</a></li>
       <li><a href="#" data-artist="taylor-swift" class="nav-filter">Taylor Swift</a></li>
       <li><a href="#" data-artist="xue-zhiqian" class="nav-filter">薛之谦</a></li>
     </ul>
@@ -289,16 +254,18 @@ nav{
       </div>
     </div>
     <div class="next-concert-info" id="next-concert-info">
-      <div style="color:var(--text-dim);font-size:12px">正在连接票务网络...</div>
+      <div style="color:var(--text-dim);font-size:12px">连接票务网络中...</div>
     </div>
   </section>
 
   <section id="carousel-section">
     <div id="carousel-stage">
-      <div id="carousel-ring"></div>
+      <div id="carousel-ring">
+        <div style="color:var(--text-dim);font-size:13px;white-space:nowrap;letter-spacing:0.2em">◆ 正在获取巡演数据 ◆</div>
+      </div>
     </div>
     <div class="carousel-hint">
-      <span class="arrows">⟵</span> 滚轮旋转环形阵列 · 点击卡片查看详情 <span class="arrows">⟶</span>
+      <span class="arrows">⟵</span> 滚轮旋转 · 点击卡片翻转 <span class="arrows">⟶</span>
     </div>
   </section>
 
@@ -307,53 +274,12 @@ nav{
   </section>
 </div>
 
-<!-- ============================================================
-     CDN SCRIPTS — jsdelivr primary + cdnjs fallback
-     ============================================================ -->
-<script>
-// CDN loader with fallback — both work inside China
-function loadScript(src,fallbackSrc,globalName){
-  return new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    s.src=src;
-    s.onload=()=>{console.log('[CDN] loaded:',globalName||src);resolve()};
-    s.onerror=()=>{
-      console.warn('[CDN] failed:',src,(fallbackSrc?'trying fallback...':''));
-      if(fallbackSrc){
-        const f=document.createElement('script');
-        f.src=fallbackSrc;
-        f.onload=()=>{console.log('[CDN] fallback loaded:',globalName);resolve()};
-        f.onerror=()=>{console.error('[CDN] fallback also failed');reject(new Error('CDN load failed: '+globalName))};
-        document.head.appendChild(f);
-      }else{reject(new Error('CDN load failed: '+globalName))}
-    };
-    document.head.appendChild(s);
-  });
-}
-</script>
-
-<!-- These load before our app code -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"
-        onerror="loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','','THREE')"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"
-        onerror="loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js','','gsap')"></script>
-
 <script>
 /* ================================================================
-   STARLIGHT LIVE — 星空Live情报站 Frontend Engine v2
-   每模块独立 try/catch，CDN 失败不影响核心交互
+   STARLIGHT LIVE v3 — ZERO DEPENDENCIES
+   纯 Canvas 2D 粒子星系 + CSS 3D 环形走马灯 + 实时倒计时
+   零外部依赖，在国内网络环境下永远不挂
    ================================================================ */
-
-// ── CDN 安全包装器 ────────────────────────────────────────
-const hasThree = ()=> typeof THREE !== 'undefined';
-const hasGSAP = ()=> typeof gsap !== 'undefined';
-
-function safeAnimate(el, props){
-  if(hasGSAP()){
-    gsap.to(el,{duration:0.3,...props,overwrite:true});
-  }
-  // CSS fallback is handled by .card-positioner:hover rule
-}
 
 // ── DOM refs ──────────────────────────────────────────────
 const $carouselRing = document.getElementById('carousel-ring');
@@ -364,290 +290,313 @@ const $cdDays = document.getElementById('cd-days');
 const $cdHours = document.getElementById('cd-hours');
 const $cdMins = document.getElementById('cd-mins');
 const $cdSecs = document.getElementById('cd-secs');
-const $statusOverlay = document.getElementById('status-overlay');
-const $statusText = document.getElementById('status-text');
-const $fallbackBg = document.getElementById('fallback-bg');
 
-// ── State ─────────────────────────────────────────────────
 let allConcerts = [];
 let currentArtist = 'all';
-let carouselAngle = 0;
-let targetAngle = 0;
-let countdownInterval = null;
-let threeOk = false;
+let carouselAngle = 0, targetAngle = 0;
+let countdownTimer = null;
 
 // ── API ───────────────────────────────────────────────────
 const API = {
-  async dashboard(){const r=await fetch('/api/ticket/dashboard');if(!r.ok)throw Error('dashboard '+r.status);return r.json()},
-  async countdown(artist){const p=artist?`?artist=${artist}`:'';const r=await fetch(`/api/ticket/countdown${p}`);if(!r.ok)throw Error('countdown '+r.status);return r.json()},
-  async prices(artist){const p=artist?`?artist=${artist}`:'';const r=await fetch(`/api/ticket/price/all${p}`);if(!r.ok)throw Error('prices '+r.status);return r.json()},
+  async fetch(url){
+    const r = await fetch(url);
+    if(!r.ok) throw Error(url+' → '+r.status);
+    return r.json();
+  },
+  dashboard(){return this.fetch('/api/ticket/dashboard')},
+  countdown(artist){return this.fetch('/api/ticket/countdown'+(artist?`?artist=${artist}`:''))},
+  prices(artist){return this.fetch('/api/ticket/price/all'+(artist?`?artist=${artist}`:''))},
 };
 
 /* ================================================================
-   THREE.JS — 粒子星系（优雅降级）
+   CANVAS 2D — 螺旋粒子星系背景
+   三臂螺旋 + 径向辉光 + 鼠标视差，纯 JS 渲染
    ================================================================ */
-function initParticleScene(){
-  if(!hasThree()){
-    console.warn('[3D] THREE not loaded — using static background');
-    $fallbackBg.style.display='block';
-    if(document.getElementById('particle-canvas'))document.getElementById('particle-canvas').style.display='none';
-    return;
+function initStarfield(){
+  const canvas = document.getElementById('star-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, mx = 0, my = 0, tmx = 0, tmy = 0;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
   }
-  try{
-    const canvas = document.getElementById('particle-canvas');
-    const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    renderer.setSize(window.innerWidth,window.innerHeight);
+  resize();
+  window.addEventListener('resize', resize);
 
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020205,0.000035);
-    const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,1,3000);
-    camera.position.z = 800;
+  document.addEventListener('mousemove', e => {
+    tmx = (e.clientX / W - 0.5) * 2;
+    tmy = (e.clientY / H - 0.5) * 2;
+  });
 
-    const COUNT = 3000;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(COUNT*3);
-    const colors = new Float32Array(COUNT*3);
-    const arms = 3, armSpread = 0.45;
-    const c1 = new THREE.Color('#00f0ff'), c2 = new THREE.Color('#ff2d95');
-
-    for(let i=0;i<COUNT;i++){
-      const aIdx = i % arms;
-      const ba = (aIdx/arms)*Math.PI*2;
-      const r = 80 + Math.pow(Math.random(),1.5)*650;
-      const sa = r*0.008;
-      const a = ba + sa + (Math.random()-0.5)*armSpread;
-      const h = (Math.random()-0.5)*r*0.4;
-      positions[i*3]=Math.cos(a)*r;
-      positions[i*3+1]=h;
-      positions[i*3+2]=Math.sin(a)*r;
-      const col = c1.clone().lerp(c2,r/650);
-      colors[i*3]=col.r;colors[i*3+1]=col.g;colors[i*3+2]=col.b;
-    }
-    geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-    geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
-
-    const gc=document.createElement('canvas');gc.width=64;gc.height=64;
-    const gctx=gc.getContext('2d');
-    const grad=gctx.createRadialGradient(32,32,0,32,32,32);
-    grad.addColorStop(0,'rgba(255,255,255,1)');grad.addColorStop(0.15,'rgba(255,255,255,0.8)');
-    grad.addColorStop(0.4,'rgba(100,200,255,0.3)');grad.addColorStop(0.7,'rgba(0,0,0,0)');
-    gctx.fillStyle=grad;gctx.fillRect(0,0,64,64);
-    const gt=new THREE.CanvasTexture(gc);
-
-    const mat = new THREE.PointsMaterial({
-      size:4.5,map:gt,blending:THREE.AdditiveBlending,
-      depthWrite:false,vertexColors:true,transparent:true,opacity:0.8
+  // Precompute star data
+  const STAR_COUNT = 450;
+  const stars = [];
+  for(let i = 0; i < STAR_COUNT; i++){
+    const armIdx = i % 3;
+    const baseAngle = (armIdx / 3) * Math.PI * 2;
+    const radius = 30 + Math.pow(Math.random(), 1.4) * Math.min(W, H) * 0.7;
+    const spiralAngle = radius * 0.004;
+    const angle = baseAngle + spiralAngle + (Math.random() - 0.5) * 0.5;
+    stars.push({
+      x: 0, y: 0, // computed each frame
+      baseX: Math.cos(angle) * radius,
+      baseY: Math.sin(angle) * radius * 0.5,
+      radius: radius,
+      baseAngle: baseAngle,
+      size: Math.random() * 1.8 + 0.3,
+      alpha: Math.random() * 0.6 + 0.4,
+      speed: Math.random() * 0.3 + 0.1,
+      hue: Math.random() < 0.5 ? 190 : 335, // cyan or pink
     });
-    const pts = new THREE.Points(geo,mat);
-    scene.add(pts);
-
-    let mx=0,my=0,tmx=0,tmy=0;
-    document.addEventListener('mousemove',e=>{tmx=(e.clientX/window.innerWidth-0.5)*2;tmy=(e.clientY/window.innerHeight-0.5)*2});
-    function anim(){
-      requestAnimationFrame(anim);
-      mx+=(tmx-mx)*0.02;my+=(tmy-my)*0.02;
-      pts.rotation.y+=0.0003;pts.rotation.x+=0.0001;
-      camera.position.x+=((mx*60)-camera.position.x)*0.02;
-      camera.position.y+=((-my*30)-camera.position.y)*0.02;
-      camera.lookAt(scene.position);
-      renderer.render(scene,camera);
-    }
-    anim();
-    window.addEventListener('resize',()=>{
-      camera.aspect=window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth,window.innerHeight);
-    });
-    threeOk = true;
-    console.log('[3D] Particle galaxy online —',COUNT,'stars');
-  }catch(e){
-    console.error('[3D] Init failed:',e.message);
-    $fallbackBg.style.display='block';
-    const c=document.getElementById('particle-canvas');if(c)c.style.display='none';
   }
+
+  function draw(time){
+    requestAnimationFrame(draw);
+
+    // Smooth mouse
+    mx += (tmx - mx) * 0.015;
+    my += (tmy - my) * 0.015;
+
+    // Parallax offset
+    const ox = mx * 60;
+    const oy = my * 40;
+
+    ctx.fillStyle = 'rgba(2,2,5,0.25)';
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2 + ox;
+    const cy = H / 2 + oy;
+
+    for(const s of stars){
+      const rotAngle = s.baseAngle + time * 0.00008 * s.speed;
+      const r = s.radius;
+      s.x = cx + Math.cos(rotAngle + s.radius * 0.004) * r;
+      s.y = cy + Math.sin(rotAngle + s.radius * 0.004) * r * 0.5;
+
+      const a = s.alpha * (0.7 + 0.3 * Math.sin(time * 0.002 + s.radius));
+      const hue = s.hue;
+      const sat = 80;
+      const light = 55 + 25 * Math.sin(time * 0.003 + s.baseAngle);
+
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+
+      // Glow
+      const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 4);
+      glow.addColorStop(0, `hsla(${hue},100%,${light}%,${a})`);
+      glow.addColorStop(0.3, `hsla(${hue},80%,${light-15}%,${a*0.4})`);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Central glow
+    const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W,H)*0.3);
+    cg.addColorStop(0, 'rgba(0,200,255,0.04)');
+    cg.addColorStop(0.5, 'rgba(100,0,200,0.02)');
+    cg.addColorStop(1, 'transparent');
+    ctx.fillStyle = cg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  requestAnimationFrame(draw);
+  console.log('[Canvas] 粒子星系就绪 —', STAR_COUNT, '颗星');
 }
 
 /* ================================================================
    CAROUSEL — CSS 3D 环形卡片阵列
    ================================================================ */
-const CARD_W = 260, CARD_H = 360;
-const RADIUS = 620;
+const CARD_W = 260, CARD_H = 360, RADIUS = 600;
 
 function buildCarousel(concerts){
-  $carouselRing.innerHTML='';
-  if(!concerts||!concerts.length){
-    $carouselRing.innerHTML='<div style="color:var(--text-dim);font-size:14px;white-space:nowrap">等待票务数据接入...</div>';
+  $carouselRing.innerHTML = '';
+  if(!concerts || !concerts.length){
+    $carouselRing.innerHTML = '<div style="color:var(--text-dim);font-size:13px;white-space:nowrap;letter-spacing:0.2em">◆ 暂无巡演数据 ◆</div>';
     return;
   }
 
   const n = concerts.length;
-  const angleStep = (Math.PI*2)/n;
+  const angleStep = (Math.PI * 2) / n;
 
-  concerts.forEach((c,i)=>{
-    const angle = angleStep*i;
+  concerts.forEach((c, i) => {
+    const angle = angleStep * i;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'card-positioner';
-    wrapper.style.cssText = `width:${CARD_W}px;height:${CARD_H}px;left:${-CARD_W/2}px;top:${-CARD_H/2}px;transform:rotateY(${angle}rad) translateZ(${RADIUS}px)`;
+    wrapper.style.cssText = [
+      `width:${CARD_W}px`, `height:${CARD_H}px`,
+      `left:${-CARD_W/2}px`, `top:${-CARD_H/2}px`,
+      `transform:rotateY(${angle}rad) translateZ(${RADIUS}px)`
+    ].join(';');
 
     const card = document.createElement('div');
     card.className = 'concert-card';
     card.dataset.concertId = c.concertId;
 
-    const isTaylor = c.artistName==='Taylor Swift';
-    const avatarClass = isTaylor?'taylor':'xue';
-    const price = c.currentPrice||0;
-    const currency = c.currency||'USD';
-    const sellout = c.sellOutRate||0;
-    const tierColor = c.tierColor||'#22c55e';
-    const tierZh = c.tierZh||'正常';
-    const date = new Date(c.date);
-    const dateStr = date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});
+    const isTaylor = c.artistName === 'Taylor Swift';
+    const avCls = isTaylor ? 'taylor' : 'xue';
+    const price = c.currentPrice || 0;
+    const cur = c.currency || 'USD';
+    const so = c.sellOutRate || 0;
+    const tc = c.tierColor || '#22c55e';
+    const tz = c.tierZh || '正常';
+    const d = new Date(c.date);
+    const ds = d.toLocaleDateString('zh-CN', {year:'numeric', month:'long', day:'numeric'});
 
+    // Using string concatenation for speed (avoids template literal parsing overhead)
     card.innerHTML =
-      `<div class="card-face card-front ${isTaylor?'taylor':'xue'}">`+
-        `<div class="card-artist-avatar ${avatarClass}">${isTaylor?'TS':'薛'}</div>`+
-        `<div class="card-artist-name">${c.artistName}</div>`+
-        `<div class="card-tour-name">${isTaylor?'The Eras Tour':'天外来物 世界巡演'}</div>`+
-        `<div class="card-city">${c.cityZh||c.city}</div>`+
-        `<div class="card-country">${c.country||''}</div>`+
-        `<div class="card-date">${dateStr}</div>`+
-        `<div class="card-venue">${c.venueZh||c.venue}</div>`+
-        `<div class="card-sellout-bar"><div class="card-sellout-fill" style="width:${sellout}%;background:${tierColor}"></div></div>`+
-        `<div class="card-tier-strip">`+
-          `<span class="card-tier-label" style="color:${tierColor}">${tierZh}</span>`+
-          `<span class="card-tier-price" style="color:${tierColor}">${currency==='CNY'?'¥':'$'}${price}</span>`+
-        `</div>`+
-      `</div>`+
-      `<div class="card-face card-back">`+
-        `<h3>◆ 票务详情</h3>`+
-        `<div class="info-row"><span class="info-label">场馆</span><span class="info-value">${c.venueZh||c.venue}</span></div>`+
-        `<div class="info-row"><span class="info-label">容量</span><span class="info-value">${(c.capacity||0).toLocaleString()} 人</span></div>`+
-        `<div class="info-row"><span class="info-label">已售</span><span class="info-value">${(c.ticketsSold||0).toLocaleString()} 张</span></div>`+
-        `<div class="info-row"><span class="info-label">售罄率</span><span class="info-value" style="color:${tierColor}">${sellout}%</span></div>`+
-        `<div class="info-row"><span class="info-label">面值</span><span class="info-value">${currency==='CNY'?'¥':'$'}${c.faceValue||0}</span></div>`+
-        `<div class="info-row"><span class="info-label">现价</span><span class="info-value" style="color:${tierColor}">${currency==='CNY'?'¥':'$'}${price}</span></div>`+
-        `<div class="info-row"><span class="info-label">溢价</span><span class="info-value" style="color:${tierColor}">+${((c.multiplier||1)-1)*100|0}%</span></div>`+
-        `<div class="countdown-mini" data-target="${c.date}">加载中...</div>`+
-      `</div>`;
+      '<div class="card-face card-front '+(isTaylor?'taylor':'xue')+'">'+
+        '<div class="card-artist-avatar '+avCls+'">'+(isTaylor?'TS':'薛')+'</div>'+
+        '<div class="card-artist-name">'+c.artistName+'</div>'+
+        '<div class="card-tour-name">'+(isTaylor?'The Eras Tour':'天外来物 世界巡演')+'</div>'+
+        '<div class="card-city">'+(c.cityZh||c.city)+'</div>'+
+        '<div class="card-country">'+(c.country||'')+'</div>'+
+        '<div class="card-date">'+ds+'</div>'+
+        '<div class="card-venue">'+(c.venueZh||c.venue)+'</div>'+
+        '<div class="card-sellout-bar"><div class="card-sellout-fill" style="width:'+so+'%;background:'+tc+'"></div></div>'+
+        '<div class="card-tier-strip">'+
+          '<span class="card-tier-label" style="color:'+tc+'">'+tz+'</span>'+
+          '<span class="card-tier-price" style="color:'+tc+'">'+(cur==='CNY'?'¥':'$')+price+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card-face card-back">'+
+        '<h3>◆ 票务详情</h3>'+
+        '<div class="info-row"><span class="info-label">场馆</span><span class="info-value">'+(c.venueZh||c.venue)+'</span></div>'+
+        '<div class="info-row"><span class="info-label">容量</span><span class="info-value">'+(c.capacity||0).toLocaleString()+' 人</span></div>'+
+        '<div class="info-row"><span class="info-label">已售</span><span class="info-value">'+(c.ticketsSold||0).toLocaleString()+' 张</span></div>'+
+        '<div class="info-row"><span class="info-label">售罄率</span><span class="info-value" style="color:'+tc+'">'+so+'%</span></div>'+
+        '<div class="info-row"><span class="info-label">面值</span><span class="info-value">'+(cur==='CNY'?'¥':'$')+(c.faceValue||0)+'</span></div>'+
+        '<div class="info-row"><span class="info-label">现价</span><span class="info-value" style="color:'+tc+'">'+(cur==='CNY'?'¥':'$')+price+'</span></div>'+
+        '<div class="info-row"><span class="info-label">溢价</span><span class="info-value" style="color:'+tc+'">+'+(((c.multiplier||1)-1)*100|0)+'%</span></div>'+
+        '<div class="countdown-mini" data-target="'+c.date+'">加载中...</div>'+
+      '</div>';
 
-    card.addEventListener('click',e=>{
+    card.addEventListener('click', e => {
       e.stopPropagation();
       card.classList.toggle('flipped');
-      if(card.classList.contains('flipped')) updateMiniCountdown(card,c.date);
+      if(card.classList.contains('flipped')) updateMiniCountdown(card, c.date);
     });
 
-    card.addEventListener('mouseenter',()=>{
-      $cursor.classList.add('hover-card');
-      safeAnimate(card,{scale:1.06,ease:'power2.out'});
-    });
-    card.addEventListener('mouseleave',()=>{
-      $cursor.classList.remove('hover-card');
-      safeAnimate(card,{scale:1,ease:'power2.out'});
-    });
+    card.addEventListener('mouseenter', () => $cursor.classList.add('hover-card'));
+    card.addEventListener('mouseleave', () => $cursor.classList.remove('hover-card'));
 
     wrapper.appendChild(card);
     $carouselRing.appendChild(wrapper);
   });
 }
 
-function updateMiniCountdown(card,targetDate){
-  const miniEl = card.querySelector('.countdown-mini');
-  if(!miniEl)return;
-  const diff = new Date(targetDate).getTime()-Date.now();
-  if(diff<=0){miniEl.textContent='已开演';return}
-  const d=Math.floor(diff/86400000);
-  const h=Math.floor((diff%86400000)/3600000);
-  const m=Math.floor((diff%3600000)/60000);
-  miniEl.textContent = `倒计时 ${d}天 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+function updateMiniCountdown(card, targetDate){
+  const el = card.querySelector('.countdown-mini');
+  if(!el) return;
+  const diff = new Date(targetDate).getTime() - Date.now();
+  if(diff <= 0){ el.textContent = '已开演'; return; }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  el.textContent = '倒计时 ' + d + '天 ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
 }
 
 /* ================================================================
    COUNTDOWN
    ================================================================ */
 function drawCountdown(targetDate){
-  if(!targetDate){$cdDays.textContent='--';$cdHours.textContent='--';$cdMins.textContent='--';$cdSecs.textContent='--';return}
-  const diff=new Date(targetDate).getTime()-Date.now();
-  if(diff<=0){$cdDays.textContent='00';$cdHours.textContent='00';$cdMins.textContent='00';$cdSecs.textContent='00';return}
-  $cdDays.textContent=String(Math.floor(diff/86400000)).padStart(2,'0');
-  $cdHours.textContent=String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
-  $cdMins.textContent=String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-  $cdSecs.textContent=String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+  if(!targetDate){
+    $cdDays.textContent='--';$cdHours.textContent='--';$cdMins.textContent='--';$cdSecs.textContent='--';
+    return;
+  }
+  const diff = new Date(targetDate).getTime() - Date.now();
+  if(diff <= 0){
+    $cdDays.textContent='00';$cdHours.textContent='00';$cdMins.textContent='00';$cdSecs.textContent='00';
+    return;
+  }
+  $cdDays.textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
+  $cdHours.textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+  $cdMins.textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+  $cdSecs.textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
 }
 
 function startCountdown(targetDate){
-  if(countdownInterval)clearInterval(countdownInterval);
+  if(countdownTimer) clearInterval(countdownTimer);
   drawCountdown(targetDate);
-  countdownInterval=setInterval(()=>drawCountdown(targetDate),1000);
+  countdownTimer = setInterval(function(){ drawCountdown(targetDate); }, 1000);
 }
 
 /* ================================================================
    DASHBOARD & NEXT INFO
    ================================================================ */
 function buildDashboard(d){
-  if(!d){$dashboard.innerHTML='';return}
-  let html='';
+  if(!d){ $dashboard.innerHTML = ''; return; }
+  var h = '';
   if(d.byArtist){
-    for(const [,artist] of Object.entries(d.byArtist)){
-      html+=`<div class="stat-card"><div class="stat-value">${artist.concertCount}</div><div class="stat-label">${artist.nameZh} 剩余场次</div></div>`;
-      html+=`<div class="stat-card"><div class="stat-value">${artist.avgSellOutRate}%</div><div class="stat-label">${artist.nameZh} 平均售罄率</div></div>`;
+    for(var key in d.byArtist){
+      var a = d.byArtist[key];
+      h += '<div class="stat-card"><div class="stat-value">'+a.concertCount+'</div><div class="stat-label">'+a.nameZh+' 剩余场次</div></div>';
+      h += '<div class="stat-card"><div class="stat-value">'+a.avgSellOutRate+'%</div><div class="stat-label">'+a.nameZh+' 平均售罄率</div></div>';
     }
   }
-  html+=`<div class="stat-card"><div class="stat-value" style="color:var(--pink)">${d.soldOutCount||0}</div><div class="stat-label">已售罄场次</div></div>`;
-  html+=`<div class="stat-card"><div class="stat-value" style="color:var(--gold)">${(d.totalSold||0).toLocaleString()}</div><div class="stat-label">已售出门票</div></div>`;
-  $dashboard.innerHTML=html;
+  h += '<div class="stat-card"><div class="stat-value" style="color:var(--pink)">'+(d.soldOutCount||0)+'</div><div class="stat-label">已售罄场次</div></div>';
+  h += '<div class="stat-card"><div class="stat-value" style="color:var(--gold)">'+(d.totalSold||0).toLocaleString()+'</div><div class="stat-label">已售出门票</div></div>';
+  $dashboard.innerHTML = h;
 }
 
 function buildNextInfo(c){
-  if(!c||c.error){$nextInfo.innerHTML='<div style="color:var(--text-dim);font-size:12px">暂无即将开演的场次</div>';return}
-  const tcm={critical:'critical',hot:'hot',warming:'warming',normal:'normal','sold-out':'sold-out'};
-  const tc=tcm[c.tier]||'normal';
-  const date=new Date(c.date);
-  $nextInfo.innerHTML=
-    `<div class="next-concert-tag">◆ NEXT CONCERT</div>`+
-    `<div class="next-concert-artist">${c.artistNameZh||c.artistName}</div>`+
-    `<div class="next-concert-city">${c.cityZh||c.city} · ${date.toLocaleDateString('zh-CN',{month:'long',day:'numeric'})}</div>`+
-    `<div class="next-concert-venue">${c.venueZh||c.venue}</div>`+
-    `<div class="price-badge ${tc}">${c.trendEmoji||''} ${c.tierZh} · ${c.currency==='CNY'?'¥':'$'}${c.currentPrice} <span style="font-size:11px;opacity:0.7">(+${c.premium||0}%)</span></div>`;
+  if(!c || c.error){
+    $nextInfo.innerHTML = '<div style="color:var(--text-dim);font-size:12px">暂无即将开演场次</div>';
+    return;
+  }
+  var map = {critical:'critical', hot:'hot', warming:'warming', normal:'normal', 'sold-out':'sold-out'};
+  var cls = map[c.tier] || 'normal';
+  var d = new Date(c.date);
+  $nextInfo.innerHTML =
+    '<div class="next-concert-tag">◆ NEXT CONCERT</div>'+
+    '<div class="next-concert-artist">'+(c.artistNameZh||c.artistName)+'</div>'+
+    '<div class="next-concert-city">'+(c.cityZh||c.city)+' · '+d.toLocaleDateString('zh-CN',{month:'long',day:'numeric'})+'</div>'+
+    '<div class="next-concert-venue">'+(c.venueZh||c.venue)+'</div>'+
+    '<div class="price-badge '+cls+'">'+(c.trendEmoji||'')+' '+c.tierZh+' · '+(c.currency==='CNY'?'¥':'$')+c.currentPrice+
+      ' <span style="font-size:10px;opacity:0.7">(+'+(c.premium||0)+'%)</span></div>';
 }
 
 /* ================================================================
-   SCROLL HANDLING
+   SCROLL — 滚轮驱动环形旋转
    ================================================================ */
-function initScrollHandler(){
-  document.addEventListener('wheel',e=>{
+function initScroll(){
+  document.addEventListener('wheel', function(e){
     e.preventDefault();
-    targetAngle+=e.deltaY*0.002;
-    carouselAngle+=(targetAngle-carouselAngle)*0.1;
-    if($carouselRing)$carouselRing.style.transform=`rotateY(${carouselAngle}rad)`;
-  },{passive:false});
+    targetAngle += e.deltaY * 0.002;
+    carouselAngle += (targetAngle - carouselAngle) * 0.1;
+    $carouselRing.style.transform = 'rotateY('+carouselAngle+'rad)';
+  }, {passive: false});
 
-  let touchY=0;
-  document.addEventListener('touchstart',e=>{touchY=e.touches[0].clientY},{passive:false});
-  document.addEventListener('touchmove',e=>{
+  var ty = 0;
+  document.addEventListener('touchstart', function(e){ ty = e.touches[0].clientY; }, {passive: false});
+  document.addEventListener('touchmove', function(e){
     e.preventDefault();
-    const dy=touchY-e.touches[0].clientY;
-    targetAngle+=dy*0.003;
-    carouselAngle+=(targetAngle-carouselAngle)*0.1;
-    if($carouselRing)$carouselRing.style.transform=`rotateY(${carouselAngle}rad)`;
-    touchY=e.touches[0].clientY;
-  },{passive:false});
+    var dy = ty - e.touches[0].clientY;
+    targetAngle += dy * 0.003;
+    carouselAngle += (targetAngle - carouselAngle) * 0.1;
+    $carouselRing.style.transform = 'rotateY('+carouselAngle+'rad)';
+    ty = e.touches[0].clientY;
+  }, {passive: false});
 }
 
 /* ================================================================
    CUSTOM CURSOR
    ================================================================ */
 function initCursor(){
-  let cx=window.innerWidth/2,cy=window.innerHeight/2,tx=cx,ty=cy;
-  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY});
-  document.querySelectorAll('a, button, .artist-tab').forEach(el=>{
-    el.addEventListener('mouseenter',()=>$cursor&&$cursor.classList.add('hover-btn'));
-    el.addEventListener('mouseleave',()=>$cursor&&$cursor.classList.remove('hover-btn'));
-  });
+  var cx = window.innerWidth/2, cy = window.innerHeight/2;
+  var tx = cx, ty = cy;
+  document.addEventListener('mousemove', function(e){ tx = e.clientX; ty = e.clientY; });
+  var links = document.querySelectorAll('a, button');
+  for(var i = 0; i < links.length; i++){
+    links[i].addEventListener('mouseenter', function(){ $cursor.classList.add('hover-btn'); });
+    links[i].addEventListener('mouseleave', function(){ $cursor.classList.remove('hover-btn'); });
+  }
   function tick(){
-    cx+=(tx-cx)*0.2;cy+=(ty-cy)*0.2;
-    if($cursor){$cursor.style.left=cx+'px';$cursor.style.top=cy+'px'}
+    cx += (tx - cx) * 0.2;
+    cy += (ty - cy) * 0.2;
+    $cursor.style.left = cx + 'px';
+    $cursor.style.top = cy + 'px';
     requestAnimationFrame(tick);
   }
   tick();
@@ -656,94 +605,86 @@ function initCursor(){
 /* ================================================================
    NAV FILTERS
    ================================================================ */
-function initNavFilters(){
-  document.querySelectorAll('.nav-filter').forEach(link=>{
-    link.addEventListener('click',async e=>{
+function initNav(){
+  var links = document.querySelectorAll('.nav-filter');
+  for(var i = 0; i < links.length; i++){
+    links[i].addEventListener('click', function(e){
       e.preventDefault();
-      document.querySelectorAll('.nav-filter').forEach(l=>l.classList.remove('active'));
-      link.classList.add('active');
-      currentArtist=link.dataset.artist;
-      try{await loadData(currentArtist==='all'?null:currentArtist)}
-      catch(err){console.error('[Nav] filter failed:',err)}
+      for(var j = 0; j < links.length; j++) links[j].classList.remove('active');
+      this.classList.add('active');
+      currentArtist = this.dataset.artist;
+      loadData(currentArtist === 'all' ? null : currentArtist);
     });
-  });
+  }
 }
 
 /* ================================================================
    DATA LOADER
    ================================================================ */
-async function loadData(artist){
-  try{
-    const [dashboardData,countdownData,prices] = await Promise.all([
-      API.dashboard(), API.countdown(artist), API.prices(artist)
-    ]);
+function loadData(artist){
+  return Promise.all([
+    API.dashboard(),
+    API.countdown(artist),
+    API.prices(artist)
+  ]).then(function(results){
+    var dashboardData = results[0];
+    var countdownData = results[1];
+    var prices = results[2];
 
     allConcerts = prices;
     buildCarousel(prices);
     buildDashboard(dashboardData);
-    buildNextInfo(prices.length>0?prices[0]:null);
-    if(countdownData.concert?.date) startCountdown(countdownData.concert.date);
+    buildNextInfo(prices.length > 0 ? prices[0] : null);
+    if(countdownData.concert && countdownData.concert.date){
+      startCountdown(countdownData.concert.date);
+    }
 
-    document.querySelectorAll('.countdown-mini').forEach(el=>{
-      const t=el.dataset.target;
-      if(t)updateMiniCountdown(el.closest('.concert-card'),t);
-    });
+    var minis = document.querySelectorAll('.countdown-mini');
+    for(var i = 0; i < minis.length; i++){
+      var t = minis[i].dataset.target;
+      if(t) updateMiniCountdown(minis[i].closest('.concert-card'), t);
+    }
 
-    $statusText.textContent = '◆ SYSTEM READY ◆';
-    $statusOverlay.classList.add('done');
-    console.log('[星空Live] ✅ 已加载 '+prices.length+' 场演唱会数据');
-    return true;
-  }catch(err){
-    console.error('[星空Live] 数据加载失败:',err.message);
-    $statusText.textContent = '⚠ API CONNECTION FAILED';
-    $statusText.className = 'error';
-    setTimeout(()=>{$statusOverlay.classList.add('done')},2000);
-    return false;
-  }
+    console.log('[星空Live] ✅ 加载完成 — '+prices.length+' 场演唱会');
+  }).catch(function(err){
+    console.error('[星空Live] 加载失败:', err.message);
+    $nextInfo.innerHTML = '<div style="color:var(--red);font-size:12px">⚠ 数据连接失败，请确认服务器已启动 (npm start)</div>';
+    // Retry after 3s
+    setTimeout(function(){ loadData(artist); }, 3000);
+  });
 }
 
 /* ================================================================
-   INIT — 每个模块独立保护，互不拖累
+   BOOT — 全模块启动
    ================================================================ */
-async function init(){
-  // Step 1: 3D scene (may silently degrade)
-  try{initParticleScene()}catch(e){console.error('[Init] 3D:',e.message);$fallbackBg.style.display='block'}
+(function boot(){
+  console.log('🚀 星空Live情报站 v3 · ZERO DEPENDENCIES');
 
-  // Step 2: Core interactions (must work regardless of 3D)
-  try{initScrollHandler()}catch(e){console.error('[Init] scroll:',e.message)}
-  try{initCursor()}catch(e){console.error('[Init] cursor:',e.message)}
-  try{initNavFilters()}catch(e){console.error('[Init] nav:',e.message)}
+  // Each module isolated — one failure cannot stop the rest
+  try { initStarfield();    console.log('[Boot] 粒子背景 ✅'); } catch(e) { console.error('[Boot] 背景失败:', e.message); }
+  try { initScroll();       console.log('[Boot] 滚轮交互 ✅'); } catch(e) { console.error('[Boot] 滚轮失败:', e.message); }
+  try { initCursor();       console.log('[Boot] 自定义光标 ✅'); } catch(e) { console.error('[Boot] 光标失败:', e.message); }
+  try { initNav();          console.log('[Boot] 导航筛选 ✅'); } catch(e) { console.error('[Boot] 导航失败:', e.message); }
+  try { loadData(null);     console.log('[Boot] 数据加载中...'); } catch(e) { console.error('[Boot] 数据启动失败:', e.message); }
 
-  // Step 3: Data (may fail gracefully — user sees error state)
-  const ok = await loadData(null);
-  if(!ok){
-    // Retry once after 2s
-    console.log('[Init] Retrying data load in 2s...');
-    setTimeout(async()=>{await loadData(null)},2000);
-  }
-
-  // Step 4: Periodic refresh
-  setInterval(async()=>{
-    try{
-      const prices=await API.prices(currentArtist==='all'?null:currentArtist);
-      allConcerts=prices;
+  // Periodic price refresh
+  setInterval(function(){
+    if(allConcerts.length === 0) return;
+    API.prices(currentArtist === 'all' ? null : currentArtist).then(function(prices){
+      allConcerts = prices;
       buildCarousel(prices);
-    }catch(e){/* silent */}
-  },60000);
+    }).catch(function(){ /* silent */ });
+  }, 60000);
 
-  setInterval(()=>{
-    document.querySelectorAll('.concert-card.flipped .countdown-mini').forEach(el=>{
-      const t=el.dataset.target;
-      if(t)updateMiniCountdown(el.closest('.concert-card'),t);
-    });
-  },30000);
-
-  console.log('🚀 星空Live情报站 · v2 · '+(threeOk?'3D online':'3D fallback')+' · '+(hasGSAP()?'GSAP':'CSS'));
-}
-
-// ── Boot: wait for DOM + CDN ─────────────────────────────
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
-else init();
+  // Mini countdown refresh
+  setInterval(function(){
+    var cards = document.querySelectorAll('.concert-card.flipped .countdown-mini');
+    for(var i = 0; i < cards.length; i++){
+      var t = cards[i].dataset.target;
+      if(t) updateMiniCountdown(cards[i].closest('.concert-card'), t);
+    }
+  }, 30000);
+})();
 </script>
 </body>
 </html>
